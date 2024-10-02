@@ -198,9 +198,9 @@ impl<'a, const LBITS: u8, const HBITS: u8, const DBITS: u8, const TRUNC: usize> 
     }
 }
 
-/// A [chunk section](ChunkSection) is a 16×24×16 collection of blocks (chunk sections are cubic).
+/// A [chunk section](ChunkSection) is a 16×16×16 collection of blocks (chunk sections are cubic).
 /// A [chunk column](ChunkData) is a 16×384×16 collection of blocks, and is what most players think of when they hear the term "chunk".
-/// However, these are not the smallest unit data is stored in in the game; [chunk columns](ChunkData) are actually 16 [chunk sections](ChunkSection) aligned vertically.
+/// However, these are not the smallest unit data is stored in in the game; [chunk columns](ChunkData) are actually 24 [chunk sections](ChunkSection) aligned vertically.
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, MinecraftPacketPart, Clone)]
 pub struct Chunk {
