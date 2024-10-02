@@ -1,3 +1,5 @@
+use ids::blocks::Block;
+
 use crate::{*, nbt::NbtTag};
 
 #[cfg_attr(test, derive(PartialEq))]
@@ -14,7 +16,7 @@ pub struct BlockEntity {
     /// The type of block entity
     ty: VarInt,
     /// The block entity's data, without the X, Y, and Z values
-    data: NbtTag,
+    pub data: NbtTag,
 }
 
 #[cfg_attr(test, derive(PartialEq))]
@@ -141,6 +143,26 @@ impl<'a> MultiBlockChange<'a> {
         let z = (block << 56 >> 60) as u8;
         (decoded_block, x, y, z)
     }
+}
+
+impl BlockEntity {
+    pub fn new(relative_x: u8, world_y: i32, relative_z: u8, block_type: Block, data: NbtTag) -> Self
+    {
+        BlockEntity {
+            packed_xz : ((relative_x & 0b1111) << 4) | (relative_z & 0b1111),
+            y: world_y as i16,
+            ty: VarInt::from(block_type.id()),
+            data,
+        }
+    }
+
+    pub fn x(&self) -> i32 { (self.packed_xz >> 4) as i32 }
+
+    pub fn y(&self) -> i32 { self.y as i32 }
+
+    pub fn z(&self) -> i32 { (self.packed_xz & 0b1111) as i32 }
+
+    pub fn get_block(&self) -> Block { Block::from_id(self.ty.0 as u32).expect("invalid block id") }
 }
 
 #[cfg(test)]
