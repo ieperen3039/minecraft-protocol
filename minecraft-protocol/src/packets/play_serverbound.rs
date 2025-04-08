@@ -325,7 +325,7 @@ pub enum ServerboundPacket<'a> {
 
     RequestPing {
         /// May be any number. Notchian clients use a system-dependent time value which is counted in milliseconds.
-        payload: u64,
+        payload: i64,
     },
 
     /// This packet is sent when a player clicks a recipe in the crafting book that is craftable (white border).
