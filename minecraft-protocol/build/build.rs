@@ -2,9 +2,11 @@ mod blocks;
 mod entities;
 mod items;
 mod recipes;
+mod block_item_interactions;
+mod json;
 
+use crate::json::*;
 use convert_case::{Case, Casing};
-use serde::{Deserialize, Serialize};
 use std::io::{ErrorKind, Read, Write};
 use std::{collections::HashMap, fs::File};
 
@@ -85,41 +87,112 @@ fn main() {
         .get(VERSION)
         .expect("There is no generated data for this minecraft version yet");
 
-    let blocks_url = format!(
-        "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/blocks.json",
-        file_locations.get("blocks").unwrap()
-    );
-    let block_data = get_data(
-        &blocks_url,
-        &format!("{target}/cache-blocks-{}.json", VERSION),
-    );
-    blocks::generate_block_enum(block_data.clone());
-    blocks::generate_block_with_state_enum(block_data);
+    let items = {
+        let items_url = format!(
+            "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/items.json",
+            file_locations.get("items").unwrap()
+        );
+        let items_data = get_data(&items_url, &format!("{target}/cache-items-{}.json", VERSION));
 
-    let items_url = format!(
-        "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/items.json",
-        file_locations.get("items").unwrap()
-    );
-    let items_data = get_data(&items_url, &format!("{target}/cache-items-{}.json", VERSION));
-    let items = items::generate_item_enum(items_data);
+        let mut items: Vec<Item> = serde_json::from_value(items_data).expect("Invalid item data");
+        items.sort_by_key(|item| item.id);
+        
+        // Patch the missing Air
+        // TODO check if this is necessary
+        if items.first().map(|i| i.id) != Some(0) {
+            items.insert(
+                0,
+                Item {
+                    id: 0,
+                    display_name: String::from("Air"),
+                    internal_name: String::from("air"),
+                    stack_size: 64,
+                    max_durability: None,
+                },
+            );
+        }
+        items
+    };
 
-    let entities_url = format!(
-        "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/entities.json",
-        file_locations.get("entities").unwrap()
-    );
-    let entities_data = get_data(
-        &entities_url,
-        &format!("{target}/cache-entities-{}.json", VERSION),
-    );
-    entities::generate_entity_enum(entities_data);
+    let blocks = {
+        let blocks_url = format!(
+            "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/blocks.json",
+            file_locations.get("blocks").unwrap()
+        );
+        let block_data = get_data(
+            &blocks_url,
+            &format!("{target}/cache-blocks-{}.json", VERSION),
+        );
+        let mut blocks: Vec<Block> = serde_json::from_value(block_data).expect("Invalid block data");
+        blocks.sort_by_key(|block| block.id);
 
-    let recipes_url = format!(
-        "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/recipes.json",
-        file_locations.get("recipes").unwrap()
-    );
-    let recipes_data = get_data(
-        &recipes_url,
-        &format!("{target}/cache-recipes-{}.json", VERSION),
-    );
-    recipes::generate_recipes(recipes_data, items);
+        // Look for missing blocks in the array
+        let mut expected = 0;
+        for block in &blocks {
+            if block.id != expected {
+                panic!("The block with id {} is missing.", expected)
+            }
+            expected += 1;
+        }
+        
+        blocks
+    };
+
+    let block_drops_data = {
+        let block_drops_url = format!(
+            "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/blockLoot.json",
+            file_locations.get("blockLoot").unwrap()
+        );
+        let block_drops_data = get_data(
+            &block_drops_url,
+            &format!("{target}/cache-block-loot-{}.json", VERSION),
+        );
+
+        serde_json::from_value(block_drops_data).expect("Invalid block loot data")
+    };
+
+    let entities = {
+        let entities_url = format!(
+            "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/entities.json",
+            file_locations.get("entities").unwrap()
+        );
+        let entities_data = get_data(
+            &entities_url,
+            &format!("{target}/cache-entities-{}.json", VERSION),
+        );
+        let mut entities: Vec<Entity> = serde_json::from_value(entities_data).expect("Invalid entity data");
+        entities.sort_by_key(|entity| entity.id);
+        entities
+    };
+    let item_recipes = {
+        let recipes_url = format!(
+            "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/recipes.json",
+            file_locations.get("recipes").unwrap()
+        );
+        let recipes_data = get_data(
+            &recipes_url,
+            &format!("{target}/cache-recipes-{}.json", VERSION),
+        );
+
+        let mut item_recipes: HashMap<u32, Vec<Recipe>> =
+            serde_json::from_value(recipes_data).expect("Invalid recipes");
+
+        // Count recipes
+        for recipes in item_recipes.values_mut() {
+            let old_len = recipes.len();
+            recipes.retain(|recipe| !matches!(recipe, Recipe::DoubleShaped{..}));
+            if recipes.len() != old_len {
+                println!("Contains a double shaped recipe, which support has been removed as an optimization. It needs to be enabled again if required by future minecraft updates.");
+            }
+        }
+
+        item_recipes
+    };
+
+    items::generate_item_enum(&items);
+    entities::generate_entity_enum(&entities);
+    blocks::generate_block_enum(&blocks);
+    blocks::generate_block_with_state_enum(&blocks);
+    block_item_interactions::generate_block_drop_enum(&blocks, &block_drops_data);
+    recipes::generate_recipes(item_recipes, items);
 }

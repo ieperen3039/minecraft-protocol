@@ -1,13 +1,5 @@
 use super::*;
-
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-struct BlockState {
-    name: String,
-    #[serde(rename = "type")]
-    ty: String,
-    num_values: usize,
-    values: Option<Vec<String>>,
-}
+use crate::json::{Block, BlockState};
 
 impl BlockState {
     fn ty(&self, block_name: &str, competing_definitions: bool) -> String {
@@ -101,38 +93,14 @@ pub enum {} {{{}
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[cfg_attr(test, derive(PartialEq))]
-#[serde(rename_all = "camelCase")]
-struct Block {
-    id: u32,
-    #[serde(rename = "name")]
-    text_id: String,
-    display_name: String,
-    hardness: f32,
-    resistance: f32,
-    diggable: bool,
-    transparent: bool,
-    filter_light: u8,
-    emit_light: u8,
-    default_state: u32,
-    min_state_id: u32,
-    max_state_id: u32,
-    drops: Vec<u32>,
-    material: Option<String>,
-    #[serde(default)]
-    harvest_tools: HashMap<u32, bool>,
-    states: Vec<BlockState>,
-}
-
 #[allow(clippy::explicit_counter_loop)]
-pub fn generate_block_enum(data: serde_json::Value) {
-    let mut blocks: Vec<Block> = serde_json::from_value(data).expect("Invalid block data");
-    blocks.sort_by_key(|block| block.id);
+pub fn generate_block_enum(
+    blocks: &Vec<Block>,
+) {
 
     // Look for missing blocks in the array
     let mut expected = 0;
-    for block in &blocks {
+    for block in blocks {
         if block.id != expected {
             panic!("The block with id {} is missing.", expected)
         }
@@ -142,7 +110,7 @@ pub fn generate_block_enum(data: serde_json::Value) {
     // Process a few fields
     let mut raw_harvest_tools: Vec<Vec<u32>> = Vec::new();
     let mut raw_materials: Vec<String> = Vec::new();
-    for block in &blocks {
+    for block in blocks {
         raw_harvest_tools.push(
             block
                 .harvest_tools
@@ -210,8 +178,8 @@ pub fn generate_block_enum(data: serde_json::Value) {
         "potatoes",
     ] {
         let mut success = false;
-        for block in &blocks {
-            if &block.text_id.as_str() == air_block {
+        for block in blocks {
+            if &block.internal_name.as_str() == air_block {
                 air_blocks[block.id as usize] = true;
                 success = true;
                 break;
@@ -224,9 +192,9 @@ pub fn generate_block_enum(data: serde_json::Value) {
 
     // Generate the variants of the Block enum
     let mut variants = String::new();
-    for block in &blocks {
+    for block in blocks {
         let name = block
-            .text_id
+            .internal_name
             .from_case(Case::Snake)
             .to_case(Case::UpperCamel);
         variants.push_str(&format!("\t{} = {},\n", name, block.id));
@@ -234,9 +202,9 @@ pub fn generate_block_enum(data: serde_json::Value) {
 
     // Generate the `match` of state ids
     let mut state_id_match_arms = String::new();
-    for block in &blocks {
+    for block in blocks {
         let name = block
-            .text_id
+            .internal_name
             .from_case(Case::Snake)
             .to_case(Case::UpperCamel);
         let start = block.min_state_id;
@@ -418,7 +386,7 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
         material_variants = material_variants,
         max_value = expected,
         state_id_match_arms = state_id_match_arms,
-        text_ids = blocks.iter().map(|b| &b.text_id).collect::<Vec<_>>(),
+        text_ids = blocks.iter().map(|b| &b.internal_name).collect::<Vec<_>>(),
         display_names = blocks.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
         state_id_ranges = blocks
             .iter()
@@ -447,27 +415,15 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
 }
 
 #[allow(clippy::explicit_counter_loop)]
-pub fn generate_block_with_state_enum(data: serde_json::Value) {
-    let mut blocks: Vec<Block> = serde_json::from_value(data).expect("Invalid block data");
-    blocks.sort_by_key(|block| block.min_state_id);
-
-    // Look for missing blocks in the array
-    let mut expected = 0;
-    for block in &blocks {
-        if block.id != expected {
-            panic!("The block with id {} is missing.", expected)
-        }
-        expected += 1;
-    }
-
+pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
     // Generate the enum definitions
     let mut enum_definitions = Vec::new();
     let mut enum_definitions_string = String::new();
     let mut already_defined_enums = Vec::new();
-    for block in &blocks {
+    for block in blocks {
         for state in &block.states {
             if state.ty.as_str() == "enum" {
-                enum_definitions.push((&block.text_id, state));
+                enum_definitions.push((&block.internal_name, state));
             }
         }
     }
@@ -493,9 +449,9 @@ pub fn generate_block_with_state_enum(data: serde_json::Value) {
 
     // Generate the variants of the Block enum
     let mut variants = String::new();
-    for block in &blocks {
+    for block in blocks {
         let name = block
-            .text_id
+            .internal_name
             .from_case(Case::Snake)
             .to_case(Case::UpperCamel);
         let mut fields = String::new();
@@ -505,7 +461,7 @@ pub fn generate_block_with_state_enum(data: serde_json::Value) {
                 false => state.name.as_str(),
             };
             let competing_definitions =
-                already_defined_enums.contains(&state.ty(&block.text_id, true));
+                already_defined_enums.contains(&state.ty(&block.internal_name, true));
             let doc = if state.ty == "int" {
                 let values: Vec<i128> = state
                     .values
@@ -526,7 +482,12 @@ pub fn generate_block_with_state_enum(data: serde_json::Value) {
                 }
 
                 match standard {
-                    true => format!("\t\t/// Valid if {} <= {} <= {}\n", values[0], name, values.last().unwrap()),
+                    true => format!(
+                        "\t\t/// Valid if {} <= {} <= {}\n",
+                        values[0],
+                        name,
+                        values.last().unwrap()
+                    ),
                     false => format!("\t\t/// Valid if {} ∈ {:?}\n", name, values),
                 }
             } else {
@@ -536,7 +497,7 @@ pub fn generate_block_with_state_enum(data: serde_json::Value) {
                 "{}\t\t{}: {},\n",
                 doc,
                 name,
-                state.ty(&block.text_id, competing_definitions)
+                state.ty(&block.internal_name, competing_definitions)
             ));
         }
         if fields.is_empty() {
@@ -549,9 +510,9 @@ pub fn generate_block_with_state_enum(data: serde_json::Value) {
     // Generate the `match` of state ids
     let mut state_id_match_arms = String::new();
     let mut state_id_rebuild_arms = String::new();
-    for block in &blocks {
+    for block in blocks {
         let name = block
-            .text_id
+            .internal_name
             .from_case(Case::Snake)
             .to_case(Case::UpperCamel);
         let start = block.min_state_id;
@@ -573,8 +534,8 @@ pub fn generate_block_with_state_enum(data: serde_json::Value) {
         let mut fields = String::new();
         for (i, state) in block.states.iter().enumerate().rev() {
             let competing_definitions =
-                already_defined_enums.contains(&state.ty(&block.text_id, true));
-            let ty = state.ty(&block.text_id, competing_definitions);
+                already_defined_enums.contains(&state.ty(&block.internal_name, true));
+            let ty = state.ty(&block.internal_name, competing_definitions);
             let name = match state.name.as_str() {
                 "type" => "ty",
                 _ => &state.name,

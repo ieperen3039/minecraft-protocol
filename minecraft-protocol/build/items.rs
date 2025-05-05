@@ -1,38 +1,11 @@
 use super::*;
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Item {
-    pub id: u32,
-    display_name: String,
-    #[serde(rename = "name")]
-    pub text_id: String,
-    stack_size: u8,
-    max_durability: Option<u16>,
-}
-
 #[allow(clippy::explicit_counter_loop)]
-pub fn generate_item_enum(data: serde_json::Value) -> Vec<Item> {
-    let mut items: Vec<Item> = serde_json::from_value(data).expect("Invalid block data");
-    items.sort_by_key(|item| item.id);
-
-    // Patch the missing Air
-    if items.first().map(|i| i.id) != Some(0) {
-        items.insert(
-            0,
-            Item {
-                id: 0,
-                display_name: String::from("Air"),
-                text_id: String::from("air"),
-                stack_size: 64,
-                max_durability: None,
-            },
-        );
-    }
+pub fn generate_item_enum(items: &Vec<Item>) {
 
     // Look for missing items in the array
     let mut expected = 0;
-    for item in &items {
+    for item in items {
         if item.id != expected {
             panic!("The item with id {} is missing.", expected)
         }
@@ -41,9 +14,9 @@ pub fn generate_item_enum(data: serde_json::Value) -> Vec<Item> {
 
     // Generate the variants of the Item enum
     let mut variants = String::new();
-    for item in &items {
+    for item in items {
         let name = item
-            .text_id
+            .internal_name
             .from_case(Case::Snake)
             .to_case(Case::UpperCamel);
         variants.push_str(&format!("\t{} = {},\n", name, item.id));
@@ -124,13 +97,11 @@ const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
         max_stack_sizes = items.iter().map(|i| i.stack_size).collect::<Vec<_>>(),
         durabilities = items.iter().map(|i| i.max_durability).collect::<Vec<_>>(),
         display_names = items.iter().map(|i| &i.display_name).collect::<Vec<_>>(),
-        text_ids = items.iter().map(|i| &i.text_id).collect::<Vec<_>>(),
+        text_ids = items.iter().map(|i| &i.internal_name).collect::<Vec<_>>(),
     );
 
     File::create("src/ids/items.rs")
         .unwrap()
         .write_all(code.as_bytes())
         .unwrap();
-
-    items
 }

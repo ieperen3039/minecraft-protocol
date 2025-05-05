@@ -1,25 +1,11 @@
 use super::*;
+use crate::json::Entity;
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Entity {
-    id: u32,
-    #[serde(rename = "name")]
-    text_id: String,
-    display_name: String,
-    width: f32,
-    height: f32,
-    #[serde(rename = "type")]
-    category: String,
-}
-
-pub fn generate_entity_enum(data: serde_json::Value) {
-    let mut entities: Vec<Entity> = serde_json::from_value(data).expect("Invalid entity data");
-    entities.sort_by_key(|entity| entity.id);
+pub fn generate_entity_enum(entities: &Vec<Entity>) {
 
     // Look for missing items in the array
     let mut expected = 0;
-    for entity in &entities {
+    for entity in entities {
         if entity.id != expected {
             panic!("The entity with id {} is missing.", expected)
         }
@@ -29,7 +15,7 @@ pub fn generate_entity_enum(data: serde_json::Value) {
     // Generate the categories array
     let mut categories = String::new();
     categories.push('[');
-    for entity in &entities {
+    for entity in entities {
         let variant_name = match entity.category.as_str() {
             "other" => "Other",
             "living" => "Living",
@@ -51,7 +37,7 @@ pub fn generate_entity_enum(data: serde_json::Value) {
 
     // Generate the variants of the Item enum
     let mut variants = String::new();
-    for entity in &entities {
+    for entity in entities {
         let name = entity
             .text_id
             .from_case(Case::Snake)

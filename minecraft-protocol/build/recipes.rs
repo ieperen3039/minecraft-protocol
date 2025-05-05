@@ -1,18 +1,8 @@
+use crate::json::*;
 use convert_case::{Case, Casing};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-#[serde(untagged)]
-enum CountedItem {
-    IDAndMetadataAndCount { id: u32, metadata: u32, count: u8 },
-    IDAndMetadata { id: u32, metadata: u32 },
-    IDAndCount { id: u32, count: u8 },
-    ID(u32),
-}
 
 impl CountedItem {
     fn to_id_and_count(&self) -> (u32, u8) {
@@ -24,7 +14,7 @@ impl CountedItem {
         }
     }
 
-    fn format(&self, items: &[super::items::Item]) -> String {
+    fn format(&self, items: &[Item]) -> String {
         let (id, count) = self.to_id_and_count();
         let item_ident = item_id_to_item(id, items);
         format!(
@@ -33,7 +23,7 @@ impl CountedItem {
         )
     }
 
-    fn format_count1(&self, items: &[super::items::Item]) -> String {
+    fn format_count1(&self, items: &[Item]) -> String {
         let (id, count) = self.to_id_and_count();
         assert!(count == 1);
         let item_ident = item_id_to_item(id, items);
@@ -45,37 +35,23 @@ impl CountedItem {
 }
 
 #[allow(dead_code)]
-fn format_option_item(item: &Option<CountedItem>, items: &[super::items::Item]) -> String {
+fn format_option_item(item: &Option<CountedItem>, items: &[Item]) -> String {
     match item {
         Some(item) => format!("Some({})", item.format(items)),
         None => "None".to_string(),
     }
 }
 
-fn format_option_item_count1(item: &Option<CountedItem>, items: &[super::items::Item]) -> String {
+fn format_option_item_count1(item: &Option<CountedItem>, items: &[Item]) -> String {
     match item {
         Some(item) => format!("Some({})", item.format_count1(items)),
         None => "None".to_string(),
     }
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(untagged)]
-enum Shape {
-    ThreeByThree([[Option<CountedItem>; 3]; 3]),
-    ThreeByTwo([[Option<CountedItem>; 3]; 2]),
-    ThreeByOne([[Option<CountedItem>; 3]; 1]),
-    TwoByThree([[Option<CountedItem>; 2]; 3]),
-    TwoByTwo([[Option<CountedItem>; 2]; 2]),
-    TwoByOne([[Option<CountedItem>; 2]; 1]),
-    OneByThree([[Option<CountedItem>; 1]; 3]),
-    OneByTwo([[Option<CountedItem>; 1]; 2]),
-    OneByOne([[Option<CountedItem>; 1]; 1]),
-}
-
 impl Shape {
     #[allow(dead_code)]
-    fn format(&self, i: &[super::items::Item]) -> String {
+    fn format(&self, i: &[Item]) -> String {
         match self {
             Shape::ThreeByThree([[v1, v2, v3], [v4, v5, v6], [v7, v8, v9]]) => {
                 format!(
@@ -158,7 +134,7 @@ impl Shape {
         }
     }
 
-    fn format_count1(&self, i: &[super::items::Item]) -> String {
+    fn format_count1(&self, i: &[Item]) -> String {
         match self {
             Shape::ThreeByThree([[v1, v2, v3], [v4, v5, v6], [v7, v8, v9]]) => {
                 format!(
@@ -242,29 +218,11 @@ impl Shape {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(untagged)]
-enum Recipe {
-    #[serde(rename_all = "camelCase")]
-    DoubleShaped {
-        result: CountedItem,
-        in_shape: Shape,
-        out_shape: Shape,
-    },
-    #[serde(rename_all = "camelCase")]
-    Shaped { in_shape: Shape, result: CountedItem },
-    #[serde(rename_all = "camelCase")]
-    ShapeLess {
-        result: CountedItem,
-        ingredients: Vec<CountedItem>,
-    },
-}
-
-fn item_id_to_item(id: u32, items: &[super::items::Item]) -> String {
+fn item_id_to_item(id: u32, items: &[Item]) -> String {
     for item in items {
         if item.id == id {
             return item
-                .text_id
+                .internal_name
                 .from_case(Case::Snake)
                 .to_case(Case::UpperCamel);
         }
@@ -273,22 +231,9 @@ fn item_id_to_item(id: u32, items: &[super::items::Item]) -> String {
     panic!("Item ID from recipe not found")
 }
 
-pub fn generate_recipes(data: serde_json::Value, items: Vec<super::items::Item>) {
-    let mut item_recipes: HashMap<u32, Vec<Recipe>> =
-        serde_json::from_value(data).expect("Invalid recipes");
-
-    // Count recipes
-    let mut recipes_count = 0;
-    for recipes in item_recipes.values_mut() {
-        let recipes_len = recipes.len();
-        recipes.retain(|recipe| !matches!(recipe, Recipe::DoubleShaped{..}));
-        if recipes.len() != recipes_len {
-            println!("Contains a double shaped recipe, which support has been removed as an optimization. It needs to be enabled again if required by future minecraft updates.");
-        }
-        recipes_count += recipes.len();
-    }
-
+pub fn generate_recipes(item_recipes: HashMap<u32, Vec<Recipe>>, items: Vec<Item>) {
     // Generate recipes
+    let mut num_recipes = 0;
     let mut recipes_data = String::new();
     for recipes in item_recipes.values() {
         for recipe in recipes {
@@ -308,6 +253,7 @@ pub fn generate_recipes(data: serde_json::Value, items: Vec<super::items::Item>)
                         result.format(&items),
                         ingredients_string,
                     ));
+                    num_recipes += 1;
                 }
                 Recipe::Shaped { result, in_shape } => {
                     recipes_data.push_str(&format!(
@@ -315,6 +261,7 @@ pub fn generate_recipes(data: serde_json::Value, items: Vec<super::items::Item>)
                         result.format(&items),
                         in_shape.format_count1(&items),
                     ));
+                    num_recipes += 1;
                 }
                 Recipe::DoubleShaped {
                     result,
@@ -327,6 +274,7 @@ pub fn generate_recipes(data: serde_json::Value, items: Vec<super::items::Item>)
                         in_shape.format_count1(&items),
                         out_shape.format_count1(&items),
                     ));
+                    num_recipes += 1;
                 }
             }
         }
@@ -433,7 +381,7 @@ const RECIPES: [Recipe; {recipes_count}] = [
 
 const SHORTCUTS: [(usize, usize); {item_count}] = {shortcuts:?};
 "#,
-        recipes_count = recipes_count,
+        recipes_count = num_recipes,
         recipes_data = recipes_data,
         item_count = items.len(),
         shortcuts = shortcuts,
