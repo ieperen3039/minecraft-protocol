@@ -3,11 +3,10 @@
 Procedural macros to make your structs compatible with the Minecraft protocol. 
 
 This crate aims to make the development of Minecraft protocol libraries easier.  
-There is already [a complete Minecraft protocol implementation](https://github.com/Mubelotix/minecraft-protocol) using this crate, but you could also [make your own](https://wiki.vg/Main_Page).
 
 ## Usage
 
-This crate requires you to declare a `MinecraftPacketPart` trait (see [tests](https://github.com/Mubelotix/minecraft-protocol-derive/tree/main/tests) for examples).  
+This crate requires you to declare a `MinecraftPacketPart` trait.  
 The name of the derive macros is the same and can be used to implement the trait automatically.  
 It can still be implemented manually for complex types.
 
