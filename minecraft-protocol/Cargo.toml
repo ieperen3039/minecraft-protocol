@@ -7,6 +7,8 @@ build = "build/build.rs"
 
 [dependencies]
 minecraft-protocol-derive = {path="../minecraft-protocol-derive"}
+# TODO replace once https://doc.rust-lang.org/core/random/trait.Random.html is stable
+rand = "0.9.1"
 
 [build-dependencies]
 minreq = {version="2.3", features=["https"]}

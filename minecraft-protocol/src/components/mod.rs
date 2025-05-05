@@ -3,6 +3,7 @@ pub mod animations;
 pub mod auto_completion;
 pub mod biomes;
 pub mod blocks;
+pub mod block_item_interactions;
 pub mod boss_bar;
 pub mod chat;
 pub mod chunk;
