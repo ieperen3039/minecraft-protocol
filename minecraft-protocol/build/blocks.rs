@@ -144,9 +144,9 @@ pub fn generate_block_enum(
     let mut materials = String::new();
     materials.push('[');
     for material in raw_materials {
-        materials.push_str("Some(BlockMaterial::");
+        materials.push_str("BlockMaterial::");
         materials.push_str(&material);
-        materials.push_str("), ");
+        materials.push_str(", ");
     }
     materials.push(']');
 
@@ -165,28 +165,9 @@ pub fn generate_block_enum(
 
     // Enumerate the air blocks
     let mut air_blocks = vec![false; expected as usize];
-    for air_block in &[
-        "air",
-        "cave_air",
-        "grass",
-        "torch",
-        "wall_torch",
-        "wheat",
-        "soul_torch",
-        "soul_wall_torch",
-        "carrots",
-        "potatoes",
-    ] {
-        let mut success = false;
-        for block in blocks {
-            if &block.internal_name.as_str() == air_block {
-                air_blocks[block.id as usize] = true;
-                success = true;
-                break;
-            }
-        }
-        if !success {
-            panic!("Could not find block {} in the block array", air_block);
+    for block in blocks {
+        if block.bounding_box == BoundingBox::Empty {
+            air_blocks[block.id as usize] = true;
         }
     }
 
@@ -279,7 +260,7 @@ impl Block {{
     }}
 
     #[inline]
-    pub fn material(self) -> Option<BlockMaterial> {{
+    pub fn material(self) -> BlockMaterial {{
         unsafe {{*MATERIALS.get_unchecked((self as u32) as usize)}}
     }}
 
@@ -319,19 +300,13 @@ impl Block {{
     }}
 
     /// A "air block" is a block on which a player cannot stand, like air, wheat, torch...
-    /// Fire is excluded since you may not want your clients to walk trought fire by default.
-    /// The list of air blocks is maintained by hand.
-    /// It could not be exhaustive.
     /// See also [Block::is_blocking].
     #[inline]
     pub fn is_air_block(self) -> bool {{
         unsafe {{*AIR_BLOCKS.get_unchecked((self as u32) as usize)}}
     }}
 
-    /// The opposite of [Block::is_air_block].
-    /// Fire is included since you may not want your clients to walk trought fire by default.
-    /// The list of blocking blocks is maintained by hand.
-    /// It could not be exhaustive.
+    /// The negation of [Block::is_air_block].
     #[inline]
     pub fn is_blocking(self) -> bool {{
         unsafe {{!(*AIR_BLOCKS.get_unchecked((self as u32) as usize))}}
@@ -365,7 +340,7 @@ const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
 const STATE_ID_RANGES: [std::ops::Range<u32>; {max_value}] = {state_id_ranges:?};
 const DEFAULT_STATE_IDS: [u32; {max_value}] = {default_state_ids:?};
 const RESISTANCES: [f32; {max_value}] = {resistances:?};
-const MATERIALS: [Option<BlockMaterial>; {max_value}] = {materials};
+const MATERIALS: [BlockMaterial; {max_value}] = {materials};
 const HARVEST_TOOLS: [&[u32]; {max_value}] = {harvest_tools};
 const HARDNESSES: [f32; {max_value}] = {hardnesses:?};
 const LIGHT_EMISSIONS: [u8; {max_value}] = {light_emissions:?};

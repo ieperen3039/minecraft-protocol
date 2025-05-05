@@ -23,6 +23,13 @@ pub struct Block {
     #[serde(default)]
     pub harvest_tools: HashMap<u32, bool>,
     pub states: Vec<BlockState>,
+    pub bounding_box: BoundingBox
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub enum BoundingBox {
+    Block,
+    Empty,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
