@@ -1,10 +1,7 @@
 [workspace]
 members = [
     "minecraft-protocol",
-    "minecraft-protocol-derive",
-    "minecraft-server",
-    "minecraft-entities-derive",
-    "minecraft-positions"
+    "minecraft-protocol-derive"
 ]
 
 workspace.resolver = "2"
