@@ -268,13 +268,6 @@ impl Block {{
         self as u32
     }}
 
-    /// This returns the item that will be dropped if you break the block.
-    /// If the item is Air, there is actually no drop.
-    #[inline]
-    pub fn associated_item_id(self) -> u32 {{
-        unsafe {{*ITEM_IDS.get_unchecked((self as u32) as usize)}}
-    }}
-
     #[inline]
     pub fn resistance(self) -> f32 {{
         unsafe {{*RESISTANCES.get_unchecked((self as u32) as usize)}}
@@ -371,7 +364,6 @@ const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
 const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
 const STATE_ID_RANGES: [std::ops::Range<u32>; {max_value}] = {state_id_ranges:?};
 const DEFAULT_STATE_IDS: [u32; {max_value}] = {default_state_ids:?};
-const ITEM_IDS: [u32; {max_value}] = {item_ids:?};
 const RESISTANCES: [f32; {max_value}] = {resistances:?};
 const MATERIALS: [Option<BlockMaterial>; {max_value}] = {materials};
 const HARVEST_TOOLS: [&[u32]; {max_value}] = {harvest_tools};
@@ -393,10 +385,6 @@ const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
             .map(|b| b.min_state_id..b.max_state_id + 1)
             .collect::<Vec<_>>(),
         default_state_ids = blocks.iter().map(|b| b.default_state).collect::<Vec<_>>(),
-        item_ids = blocks
-            .iter()
-            .map(|b| b.drops.get(0).copied().unwrap_or(0))
-            .collect::<Vec<_>>(),
         materials = materials,
         resistances = blocks.iter().map(|b| b.resistance).collect::<Vec<_>>(),
         harvest_tools = harvest_tools,
