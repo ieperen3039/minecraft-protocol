@@ -46,7 +46,7 @@ pub fn generate_block_drop_enum(blocks: &Vec<Block>, block_drops: &Vec<BlockDrop
         append_drops(
             &mut block_to_item_enum,
             &block_variant_name,
-            format!("if {tool_ids:?}.contains(&tool)").as_str(),
+            &format!("if {tool_ids:?}.contains(&tool)"),
             tool_drops,
         );
 
@@ -55,8 +55,8 @@ pub fn generate_block_drop_enum(blocks: &Vec<Block>, block_drops: &Vec<BlockDrop
 
     // Generate the code
     let code = format!(
-        r#"//! Contains the [block_to_item] function and the [item_to_block] functions to help with
-//! block breaking and placement.
+        r#"//! Contains the [block_to_item] function to help with
+//! block breaking
 
 use crate::{{
     ids::{{blocks::Block, items::Item}},
@@ -156,12 +156,11 @@ fn append_drops(
         };
 
         block_to_item_enum.push_str(
-            format!("\t\tBlock::{block_variant_name} {condition} => {tool_drop_string},\n")
-                .as_str(),
+            &format!("\t\tBlock::{block_variant_name} {condition} => {tool_drop_string},\n"),
         );
     } else if drops.len() > 1 {
         block_to_item_enum
-            .push_str(format!("\t\tBlock::{block_variant_name} {condition} => ").as_str());
+            .push_str(&format!("\t\tBlock::{block_variant_name} {condition} => "));
 
         // if any of the drops is randomized, we need to generate a multiline vector construction
         let has_randomized_drops = drops.iter().any(|drop| {
@@ -183,7 +182,7 @@ fn append_drops(
 
                 let count = drop.stack_size_range[0].unwrap_or(1);
                 for _ in 0..count {
-                    block_to_item_enum.push_str(format!("Item::{item_variant_name}, ").as_str());
+                    block_to_item_enum.push_str(&format!("Item::{item_variant_name}, "));
                 }
             }
 
@@ -210,26 +209,24 @@ fn append_multiline_drops(block_to_item_enum: &mut String, drops: &Vec<&BlockIte
 
         if minimum_count != maximum_count {
             block_to_item_enum.push_str(
-                format!(
+                &format!(
                     "\t\t\tlet max_num_drops = {maximum_count} + fortune_level as usize;\n\
                     \t\t\tfor _ in 0..rng.random_range({minimum_count}..max_num_drops) {{\n\
                     \t\t\t\titems.push(Item::{item_variant_name});\n\
                     \t\t\t}}\n"
-                )
-                .as_str(),
+                ),
             );
         } else if maximum_count > 1 {
             block_to_item_enum.push_str(
-                format!(
+                &format!(
                     "\t\t\tfor _ in 0..{maximum_count} {{\n \
                     \t\t\t\titems.push(Item::{item_variant_name});\n \
                     \t\t\t}}\n "
-                )
-                .as_str(),
+                ),
             );
         } else {
             block_to_item_enum
-                .push_str(format!("\t\t\titems.push(Item::{item_variant_name});\n").as_str());
+                .push_str(&format!("\t\t\titems.push(Item::{item_variant_name});\n"));
         }
     }
 

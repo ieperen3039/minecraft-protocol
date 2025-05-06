@@ -4,6 +4,8 @@ mod items;
 mod recipes;
 mod block_drops;
 mod json;
+mod item_to_block;
+mod string_distance;
 
 use crate::json::*;
 use convert_case::{Case, Casing};
@@ -194,5 +196,6 @@ fn main() {
     blocks::generate_block_enum(&blocks);
     blocks::generate_block_with_state_enum(&blocks);
     block_drops::generate_block_drop_enum(&blocks, &block_drops_data);
+    item_to_block::generate_item_to_block_enum(&block_drops_data);
     recipes::generate_recipes(item_recipes, items);
 }
