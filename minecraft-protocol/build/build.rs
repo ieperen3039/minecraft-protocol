@@ -2,7 +2,7 @@ mod blocks;
 mod entities;
 mod items;
 mod recipes;
-mod block_item_interactions;
+mod block_drops;
 mod json;
 
 use crate::json::*;
@@ -193,6 +193,6 @@ fn main() {
     entities::generate_entity_enum(&entities);
     blocks::generate_block_enum(&blocks);
     blocks::generate_block_with_state_enum(&blocks);
-    block_item_interactions::generate_block_drop_enum(&blocks, &block_drops_data);
+    block_drops::generate_block_drop_enum(&blocks, &block_drops_data);
     recipes::generate_recipes(item_recipes, items);
 }

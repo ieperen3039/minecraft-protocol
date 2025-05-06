@@ -118,7 +118,7 @@ fn block_to_item_inner<R: Rng + ?Sized>(
 "#
     );
 
-    File::create("src/components/block_item_interactions.rs")
+    File::create("src/components/block_drops.rs")
         .unwrap()
         .write_all(code.as_bytes())
         .unwrap()

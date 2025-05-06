@@ -27,6 +27,7 @@ pub struct Block {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub enum BoundingBox {
     Block,
     Empty,
