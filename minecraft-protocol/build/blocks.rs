@@ -2,7 +2,7 @@ use super::*;
 use crate::json::{Block, BlockState};
 
 impl BlockState {
-    fn ty(&self, block_name: &str, competing_definitions: bool) -> String {
+    fn type_name(&self, block_name: &str, competing_definitions: bool) -> String {
         match self.ty.as_str() {
             "int" => {
                 let values: Vec<i128> = self
@@ -51,7 +51,7 @@ impl BlockState {
                 String::from("i128")
             }
             "enum" => match competing_definitions {
-                true => format!("{}_{}", block_name, self.name),
+                true => format!("{}_{}", block_name.split("_").last().unwrap_or(block_name), self.name),
                 false => self.name.to_string(),
             }
             .from_case(Case::Snake)
@@ -87,7 +87,7 @@ impl BlockState {
 #[cfg_attr(test, derive(PartialEq))]
 pub enum {} {{{}
 }}"#,
-            self.ty(block_name, competing_definitions),
+            self.type_name(block_name, competing_definitions),
             variants
         )
     }
@@ -400,13 +400,13 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
                 break;
             }
         }
-        if !already_defined_enums.contains(&enum_definition.ty(block_name, competing_definitions)) {
+        if !already_defined_enums.contains(&enum_definition.type_name(block_name, competing_definitions)) {
             enum_definitions_string
                 .push_str(&enum_definition.define_enum(block_name, competing_definitions));
             enum_definitions_string.push('\n');
             enum_definitions_string.push('\n');
 
-            already_defined_enums.push(enum_definition.ty(block_name, competing_definitions));
+            already_defined_enums.push(enum_definition.type_name(block_name, competing_definitions));
         }
     }
 
@@ -424,7 +424,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
                 false => state.name.as_str(),
             };
             let competing_definitions =
-                already_defined_enums.contains(&state.ty(&block.internal_name, true));
+                already_defined_enums.contains(&state.type_name(&block.internal_name, true));
             let doc = if state.ty == "int" {
                 let values: Vec<i128> = state
                     .values
@@ -451,7 +451,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
                         name,
                         values.last().unwrap()
                     ),
-                    false => format!("\t\t/// Valid if {} ∈ {:?}\n", name, values),
+                    false => format!("\t\t/// Valid if {} in {:?}\n", name, values),
                 }
             } else {
                 String::new()
@@ -460,7 +460,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
                 "{}\t\t{}: {},\n",
                 doc,
                 name,
-                state.ty(&block.internal_name, competing_definitions)
+                state.type_name(&block.internal_name, competing_definitions)
             ));
         }
         if fields.is_empty() {
@@ -497,8 +497,8 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
         let mut fields = String::new();
         for (i, state) in block.states.iter().enumerate().rev() {
             let competing_definitions =
-                already_defined_enums.contains(&state.ty(&block.internal_name, true));
-            let ty = state.ty(&block.internal_name, competing_definitions);
+                already_defined_enums.contains(&state.type_name(&block.internal_name, true));
+            let ty = state.type_name(&block.internal_name, competing_definitions);
             let name = match state.name.as_str() {
                 "type" => "ty",
                 _ => &state.name,
