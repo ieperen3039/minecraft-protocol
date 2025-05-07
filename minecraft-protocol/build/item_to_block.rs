@@ -1,5 +1,5 @@
 use crate::json::BlockDropMapping;
-use crate::string_distance;
+use crate::{categories, string_distance};
 use convert_case::{Case, Casing};
 use std::collections::HashMap;
 use std::fs::File;
@@ -45,19 +45,14 @@ pub fn generate_item_to_block_enum(block_drops: &Vec<BlockDropMapping>) {
 
     let mut item_to_block_enum = String::new();
     for (&item, &block) in item_to_block.iter() {
-        let is_slab = item.ends_with("_slab");
-        let is_stairs = item.ends_with("_stairs");
-        let is_wall = item.ends_with("_wall");
-        let is_fence = item.ends_with("_fence") || item.ends_with("_fence_gate");
-
         let block_variant_name = block.from_case(Case::Snake).to_case(Case::UpperCamel);
         let item_variant_name = item.from_case(Case::Snake).to_case(Case::UpperCamel);
 
-        if is_slab {
+        if categories::is_slab(item) {
             item_to_block_enum.push_str(&format!(
                 "\t\t\tItem::{item_variant_name} => \n\
                 \t\t\t\tSome(BlockWithState::{block_variant_name}{{\n\
-                \t\t\t\t\tty: if cursor_position_z > 0.5 {{ Type::Top }} else {{ Type::Bottom }},\n\
+                \t\t\t\t\tty: if cursor_position_z > 0.5 {{ SlabType::Top }} else {{ SlabType::Bottom }},\n\
                 \t\t\t\t\twaterlogged: false,\n\
                 \t\t\t\t}}),\n"
             ));

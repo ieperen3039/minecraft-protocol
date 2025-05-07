@@ -1,10 +1,11 @@
-mod blocks;
-mod entities;
-mod items;
-mod recipes;
 mod block_drops;
-mod json;
+mod blocks;
+mod categories;
+mod entities;
 mod item_to_block;
+mod items;
+mod json;
+mod recipes;
 mod string_distance;
 
 use crate::json::*;
@@ -74,9 +75,7 @@ fn main() {
         "cargo:rerun-if-changed={target}/cache-file-location-{}.json",
         VERSION
     );
-    println!(
-        "cargo:rerun-if-changed=build"
-    );
+    println!("cargo:rerun-if-changed=build");
 
     let mut file_locations = get_data(
         "https://raw.githubusercontent.com/PrismarineJS/minecraft-data/master/data/dataPaths.json",
@@ -94,11 +93,14 @@ fn main() {
             "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/items.json",
             file_locations.get("items").unwrap()
         );
-        let items_data = get_data(&items_url, &format!("{target}/cache-items-{}.json", VERSION));
+        let items_data = get_data(
+            &items_url,
+            &format!("{target}/cache-items-{}.json", VERSION),
+        );
 
         let mut items: Vec<Item> = serde_json::from_value(items_data).expect("Invalid item data");
         items.sort_by_key(|item| item.id);
-        
+
         // Patch the missing Air
         // TODO check if this is necessary
         if items.first().map(|i| i.id) != Some(0) {
@@ -125,18 +127,50 @@ fn main() {
             &blocks_url,
             &format!("{target}/cache-blocks-{}.json", VERSION),
         );
-        let mut blocks: Vec<Block> = serde_json::from_value(block_data).expect("Invalid block data");
+        let mut blocks: Vec<Block> =
+            serde_json::from_value(block_data).expect("Invalid block data");
         blocks.sort_by_key(|block| block.id);
 
         // Look for missing blocks in the array
         let mut expected = 0;
-        for block in &blocks {
+        for block in &mut blocks {
             if block.id != expected {
                 panic!("The block with id {} is missing.", expected)
             }
             expected += 1;
+
+            // reduce conflicts in the state categories
+            for state in &mut block.states {
+                if let Some(vals) = &state.values {
+
+                    if state.name == "facing" && vals.len() == 4 {
+                        if vals
+                            .iter()
+                            .all(|v| v != "up" && v != "down")
+                        {
+                            state.name.push_str("_horizontal");
+                        }
+                    }
+
+                    if state.name == "facing" && vals.len() == 6 {
+                        state.name.push_str("_anywhere");
+                    }
+
+                    // nether portals are the only "axis" user without a y coordinate
+                    if state.name == "axis" {
+                        if vals.iter().all(|v| v != "y") {
+                            state.name.push_str("_horizontal");
+                        }
+                    }
+
+                    // all plants have a "half" state
+                    if state.name == "half" && vals.len() == 2 && vals[0] == "upper" && vals[1] == "lower" {
+                        state.name = String::from("vertical_half");
+                    }
+                }
+            }
         }
-        
+
         blocks
     };
 
@@ -162,7 +196,8 @@ fn main() {
             &entities_url,
             &format!("{target}/cache-entities-{}.json", VERSION),
         );
-        let mut entities: Vec<Entity> = serde_json::from_value(entities_data).expect("Invalid entity data");
+        let mut entities: Vec<Entity> =
+            serde_json::from_value(entities_data).expect("Invalid entity data");
         entities.sort_by_key(|entity| entity.id);
         entities
     };
@@ -182,7 +217,7 @@ fn main() {
         // Count recipes
         for recipes in item_recipes.values_mut() {
             let old_len = recipes.len();
-            recipes.retain(|recipe| !matches!(recipe, Recipe::DoubleShaped{..}));
+            recipes.retain(|recipe| !matches!(recipe, Recipe::DoubleShaped { .. }));
             if recipes.len() != old_len {
                 println!("Contains a double shaped recipe, which support has been removed as an optimization. It needs to be enabled again if required by future minecraft updates.");
             }
