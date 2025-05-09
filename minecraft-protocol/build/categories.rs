@@ -3,12 +3,25 @@ pub fn is_stairs(internal_name: &str) -> bool {
     internal_name.ends_with("_stairs")
 }
 
+pub fn is_door(internal_name: &str) -> bool {
+    internal_name.ends_with("_door")
+}
+
 pub fn is_trapdoor(internal_name: &str) -> bool {
     internal_name.ends_with("_trapdoor")
 }
 
 pub fn is_slab(internal_name: &str) -> bool {
     internal_name.ends_with("_slab")
+}
+
+pub fn is_chest(internal_name: &str) -> bool {
+    // also captures trapped chests
+    internal_name.ends_with("_chest") || internal_name == "chest"
+}
+
+pub fn is_rail(internal_name: &str) -> bool {
+    internal_name.ends_with("_rail") || internal_name == "rail"
 }
 
 pub fn is_wall(internal_name: &str) -> bool {
@@ -25,4 +38,8 @@ pub fn is_portal(internal_name: &str) -> bool {
 
 pub fn has_axis(internal_name: &str) -> bool {
     internal_name.ends_with("_log") || internal_name.ends_with("_basalt")
+}
+
+pub fn is_fence_gate(internal_name: &str) -> bool {
+    internal_name.ends_with("_fence_gate")
 }

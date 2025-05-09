@@ -152,8 +152,14 @@ fn main() {
                         }
                     }
 
-                    if state.name == "facing" && vals.len() == 6 {
-                        state.name.push_str("_anywhere");
+                    // hoppers are the only "facing" user without "up"
+                    if state.name == "facing" && vals.len() == 5 {
+                        if vals
+                            .iter()
+                            .all(|v| v != "up")
+                        {
+                            state.name.push_str("_hopper");
+                        }
                     }
 
                     // nether portals are the only "axis" user without a y coordinate
@@ -231,6 +237,6 @@ fn main() {
     blocks::generate_block_enum(&blocks);
     blocks::generate_block_with_state_enum(&blocks);
     block_drops::generate_block_drop_enum(&blocks, &block_drops_data);
-    item_to_block::generate_item_to_block_enum(&block_drops_data);
+    item_to_block::generate_item_to_block_enum(&block_drops_data, &blocks);
     recipes::generate_recipes(item_recipes, items);
 }
