@@ -2,7 +2,6 @@ mod blocks;
 mod entities;
 mod items;
 mod recipes;
-mod block_item_interactions;
 mod json;
 
 use crate::json::*;
@@ -171,19 +170,6 @@ fn main() {
         blocks
     };
 
-    let block_drops_data = {
-        let block_drops_url = format!(
-            "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/blockLoot.json",
-            file_locations.get("blockLoot").unwrap()
-        );
-        let block_drops_data = get_data(
-            &block_drops_url,
-            &format!("{target}/cache-block-loot-{}.json", VERSION),
-        );
-
-        serde_json::from_value(block_drops_data).expect("Invalid block loot data")
-    };
-
     let entities = {
         let entities_url = format!(
             "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/entities.json",
@@ -227,7 +213,5 @@ fn main() {
     entities::generate_entity_enum(&entities);
     blocks::generate_block_enum(&blocks);
     blocks::generate_block_with_state_enum(&blocks);
-    block_drops::generate_block_drop_enum(&blocks, &block_drops_data);
-    item_to_block::generate_item_to_block_enum(&block_drops_data);
     recipes::generate_recipes(item_recipes, items);
 }

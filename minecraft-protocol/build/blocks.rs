@@ -106,19 +106,11 @@ pub fn generate_block_enum(
         }
         expected += 1;
     }
+    let num_blocks = expected as usize;
 
     // Process a few fields
-    let mut raw_harvest_tools: Vec<Vec<u32>> = Vec::new();
     let mut raw_materials: Vec<String> = Vec::new();
     for block in blocks {
-        raw_harvest_tools.push(
-            block
-                .harvest_tools
-                .clone()
-                .into_iter()
-                .map(|(k, _v)| k)
-                .collect(),
-        );
         let mut material = block
             .material
             .clone()
@@ -149,27 +141,6 @@ pub fn generate_block_enum(
         materials.push_str(", ");
     }
     materials.push(']');
-
-    // Generate the HARVEST_TOOLS array
-    let mut harvest_tools = String::new();
-    harvest_tools.push('[');
-    for block_harvest_tools in raw_harvest_tools {
-        harvest_tools.push_str("&[");
-        for harvest_tool in block_harvest_tools {
-            harvest_tools.push_str(&harvest_tool.to_string());
-            harvest_tools.push_str(", ");
-        }
-        harvest_tools.push_str("], ");
-    }
-    harvest_tools.push(']');
-
-    // Enumerate the air blocks
-    let mut air_blocks = vec![false; expected as usize];
-    for block in blocks {
-        if block.bounding_box == BoundingBox::Empty {
-            air_blocks[block.id as usize] = true;
-        }
-    }
 
     // Generate the variants of the Block enum
     let mut variants = String::new();
@@ -204,7 +175,9 @@ pub fn generate_block_enum(
     let code = format!(
         r#"use crate::*;
 
-/// See [implementations](#implementations) for useful methods.
+// THIS FILE IS GENERATED AUTOMATICALLY.
+// See {this_file}.
+
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Block {{
@@ -219,7 +192,7 @@ pub enum BlockMaterial {{
 impl Block {{
     #[inline]
     pub fn from_id(id: u32) -> Option<Block> {{
-        if id < {max_value} {{
+        if id < {num_blocks} {{
             Some(unsafe{{std::mem::transmute(id)}})
         }} else {{
             None
@@ -233,83 +206,20 @@ impl Block {{
         }}
     }}
 
-    /// Get the textual identifier of this block.
-    #[inline]
-    pub fn text_id(self) -> &'static str {{
-        unsafe {{*TEXT_IDS.get_unchecked((self as u32) as usize)}}
-    }}
-
-    #[inline]
-    pub fn default_state_id(self) -> u32 {{
-        unsafe {{*DEFAULT_STATE_IDS.get_unchecked((self as u32) as usize)}}
-    }}
-
     #[inline]
     pub fn id(self) -> u32 {{
         self as u32
     }}
 
+    /// Get the textual identifier of this block.
     #[inline]
-    pub fn resistance(self) -> f32 {{
-        unsafe {{*RESISTANCES.get_unchecked((self as u32) as usize)}}
-    }}
-
-    #[inline]
-    pub fn hardness(self) -> f32 {{
-        unsafe {{*HARDNESSES.get_unchecked((self as u32) as usize)}}
+    pub fn internal_name(self) -> &'static str {{
+        unsafe {{*INTERNAL_NAMES.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
     pub fn material(self) -> BlockMaterial {{
         unsafe {{*MATERIALS.get_unchecked((self as u32) as usize)}}
-    }}
-
-    #[inline]
-    pub fn display_name(self) -> &'static str {{
-        unsafe {{*DISPLAY_NAMES.get_unchecked((self as u32) as usize)}}
-    }}
-
-    #[inline]
-    pub fn state_id_range(self) -> std::ops::Range<u32> {{
-        unsafe {{STATE_ID_RANGES.get_unchecked((self as u32) as usize).clone()}}
-    }}
-
-    #[inline]
-    pub fn is_diggable(self) -> bool {{
-        unsafe {{*DIGGABLE.get_unchecked((self as u32) as usize)}}
-    }}
-
-    #[inline]
-    pub fn is_transparent(self) -> bool {{
-        unsafe {{*TRANSPARENT.get_unchecked((self as u32) as usize)}}
-    }}
-
-    #[inline]
-    pub fn compatible_harvest_tools(self) -> &'static [u32] {{
-        unsafe {{*HARVEST_TOOLS.get_unchecked((self as u32) as usize)}}
-    }}
-
-    #[inline]
-    pub fn light_emissions(self) -> u8 {{
-        unsafe {{*LIGHT_EMISSIONS.get_unchecked((self as u32) as usize)}}
-    }}
-
-    #[inline]
-    pub fn light_absorption(self) -> u8 {{
-        unsafe {{*LIGHT_ABSORPTION.get_unchecked((self as u32) as usize)}}
-    }}
-
-    /// A "air block" is a block on which a player cannot stand, like air, wheat, torch...
-    /// See also [Block::is_blocking].
-    #[inline]
-    pub fn is_air_block(self) -> bool {{
-        unsafe {{*AIR_BLOCKS.get_unchecked((self as u32) as usize)}}
-    }}
-
-    /// The negation of [Block::is_air_block].
-    #[inline]
-    pub fn is_blocking(self) -> bool {{
-        unsafe {{!(*AIR_BLOCKS.get_unchecked((self as u32) as usize))}}
     }}
 }}
 
@@ -335,40 +245,13 @@ impl<'a> MinecraftPacketPart<'a> for Block {{
     }}
 }}
 
-const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
-const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
-const STATE_ID_RANGES: [std::ops::Range<u32>; {max_value}] = {state_id_ranges:?};
-const DEFAULT_STATE_IDS: [u32; {max_value}] = {default_state_ids:?};
-const RESISTANCES: [f32; {max_value}] = {resistances:?};
-const MATERIALS: [BlockMaterial; {max_value}] = {materials};
-const HARVEST_TOOLS: [&[u32]; {max_value}] = {harvest_tools};
-const HARDNESSES: [f32; {max_value}] = {hardnesses:?};
-const LIGHT_EMISSIONS: [u8; {max_value}] = {light_emissions:?};
-const LIGHT_ABSORPTION: [u8; {max_value}] = {light_absorption:?};
-const DIGGABLE: [bool; {max_value}] = {diggable:?};
-const TRANSPARENT: [bool; {max_value}] = {transparent:?};
-const AIR_BLOCKS: [bool; {max_value}] = {air_blocks:?};
+const INTERNAL_NAMES: [&str; {num_blocks}] = {internal_names:?};
+const DISPLAY_NAMES: [&str; {num_blocks}] = {display_names:?};
+const MATERIALS: [BlockMaterial; {num_blocks}] = {materials};
 "#,
-        variants = variants,
-        material_variants = material_variants,
-        max_value = expected,
-        state_id_match_arms = state_id_match_arms,
-        text_ids = blocks.iter().map(|b| &b.internal_name).collect::<Vec<_>>(),
+        this_file = file!(),
+        internal_names = blocks.iter().map(|b| &b.internal_name).collect::<Vec<_>>(),
         display_names = blocks.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
-        state_id_ranges = blocks
-            .iter()
-            .map(|b| b.min_state_id..b.max_state_id + 1)
-            .collect::<Vec<_>>(),
-        default_state_ids = blocks.iter().map(|b| b.default_state).collect::<Vec<_>>(),
-        materials = materials,
-        resistances = blocks.iter().map(|b| b.resistance).collect::<Vec<_>>(),
-        harvest_tools = harvest_tools,
-        hardnesses = blocks.iter().map(|b| b.hardness).collect::<Vec<_>>(),
-        light_emissions = blocks.iter().map(|b| b.emit_light).collect::<Vec<_>>(),
-        light_absorption = blocks.iter().map(|b| b.filter_light).collect::<Vec<_>>(),
-        diggable = blocks.iter().map(|b| b.diggable).collect::<Vec<_>>(),
-        transparent = blocks.iter().map(|b| b.transparent).collect::<Vec<_>>(),
-        air_blocks = air_blocks,
     );
 
     File::create("src/ids/blocks.rs")
@@ -689,10 +572,9 @@ impl BlockWithState {{
         }}
     }}
 
-    /// Returns the block id, **not the block state id**.
     #[inline]
-    pub fn block_id(&self) -> u32 {{
-        unsafe {{std::mem::transmute(std::mem::discriminant(self))}}
+    pub fn to_block(&self) -> Block {{
+        Block::from(self.clone());
     }}
 
     /// Returns the block state id.
@@ -702,13 +584,6 @@ impl BlockWithState {{
         match self {{
 {state_id_rebuild_arms}
         }}
-    }}
-}}
-
-impl From<super::blocks::Block> for BlockWithState {{
-    #[inline]
-    fn from(block: super::blocks::Block) -> BlockWithState {{
-        BlockWithState::from_state_id(block.default_state_id()).unwrap() // TODO: unwrap unchecked
     }}
 }}
 
