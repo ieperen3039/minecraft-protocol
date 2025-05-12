@@ -217,6 +217,12 @@ impl Block {{
         unsafe {{*INTERNAL_NAMES.get_unchecked((self as u32) as usize)}}
     }}
 
+    /// Get the english in-game name of this block.
+    #[inline]
+    pub fn display_name(self) -> &'static str {{
+        unsafe {{*DISPLAY_NAMES.get_unchecked((self as u32) as usize)}}
+    }}
+
     #[inline]
     pub fn material(self) -> BlockMaterial {{
         unsafe {{*MATERIALS.get_unchecked((self as u32) as usize)}}
@@ -226,7 +232,7 @@ impl Block {{
 impl From<super::block_states::BlockWithState> for Block {{
     #[inline]
     fn from(block_with_state: super::block_states::BlockWithState) -> Block {{
-        unsafe {{std::mem::transmute(block_with_state.block_id())}}
+		unsafe{{std::mem::transmute(std::mem::discriminant(block_with_state))}}
     }}
 }}
 
@@ -552,6 +558,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
         r#"//! Contains the [BlockWithState] enum to help with block state IDs.
             
 use crate::*;
+use crate::ids::blocks::Block;
 
 {enum_definitions}
 
@@ -574,7 +581,20 @@ impl BlockWithState {{
 
     #[inline]
     pub fn to_block(&self) -> Block {{
-        Block::from(self.clone());
+        // TODO: this is undefined behavior
+		unsafe{{std::mem::transmute(std::mem::discriminant(self))}}
+    }}
+
+    /// Get the textual identifier of this block.
+    #[inline]
+    pub fn internal_name(self) -> &'static str {{
+        self.to_block().internal_name()
+    }}
+
+    /// Get the english in-game name of this block.
+    #[inline]
+    pub fn display_name(self) -> &'static str {{
+        self.to_block().display_name()
     }}
 
     /// Returns the block state id.
