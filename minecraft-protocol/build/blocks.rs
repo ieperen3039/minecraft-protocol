@@ -51,7 +51,11 @@ impl BlockState {
                 String::from("i128")
             }
             "enum" => match competing_definitions {
-                true => format!("{}_{}", block_name.split("_").last().unwrap_or(block_name), self.name),
+                true => format!(
+                    "{}_{}",
+                    block_name.split("_").last().unwrap_or(block_name),
+                    self.name
+                ),
                 false => self.name.to_string(),
             }
             .from_case(Case::Snake)
@@ -94,10 +98,7 @@ pub enum {} {{{}
 }
 
 #[allow(clippy::explicit_counter_loop)]
-pub fn generate_block_enum(
-    blocks: &Vec<Block>,
-) {
-
+pub fn generate_block_enum(blocks: &Vec<Block>) {
     // Look for missing blocks in the array
     let mut expected = 0;
     for block in blocks {
@@ -108,39 +109,48 @@ pub fn generate_block_enum(
     }
     let num_blocks = expected as usize;
 
+    let mut block_materials = Vec::new();
+
     // Process a few fields
     let mut raw_materials: Vec<String> = Vec::new();
+    raw_materials.push(String::from("None"));
+
     for block in blocks {
-        let mut material = block
-            .material
-            .clone()
-            .unwrap_or_else(|| "unknown_material".to_string())
-            .split(';')
-            .next()
-            .unwrap()
-            .to_string();
-        if material.starts_with("mineable") {
-            material = "unknown_material".to_string();
+        let mut material_indices = Vec::new();
+        if let Some(material_string) = &block.material {
+            for mat in material_string.split(';') {
+                let new_mat = mat
+                    .replace("/", "_")
+                    .from_case(Case::Snake)
+                    .to_case(Case::UpperCamel);
+
+                let index = raw_materials
+                    .iter()
+                    .position(|x| *x == new_mat)
+                    .unwrap_or_else(|| {
+                        raw_materials.push(new_mat);
+                        raw_materials.len() - 1
+                    });
+
+                material_indices.push(index as u8);
+            }
         }
-        raw_materials.push(material.from_case(Case::Snake).to_case(Case::UpperCamel));
+
+        // we want an array of exactly 3 elements
+        block_materials.push([
+            material_indices.get(0).cloned().unwrap_or(0),
+            material_indices.get(1).cloned().unwrap_or(0),
+            material_indices.get(2).cloned().unwrap_or(0)
+        ]);
+        // check if there is any material with 4 elements
+        assert_eq!(material_indices.get(3), None, "{:?} has materials {:?}", &block.display_name, &block.material);
     }
 
-    // Generate the MaterialBlock enum and array
-    let mut different_materials = raw_materials.clone();
-    different_materials.sort();
-    different_materials.dedup();
+    // Generate the MaterialBlock
     let mut material_variants = String::new();
-    for material in different_materials {
-        material_variants.push_str(&format!("\t{},\n", material));
+    for (index, material) in raw_materials.iter().enumerate() {
+        material_variants.push_str(&format!("\t{material} = {index},\n", ));
     }
-    let mut materials = String::new();
-    materials.push('[');
-    for material in raw_materials {
-        materials.push_str("BlockMaterial::");
-        materials.push_str(&material);
-        materials.push_str(", ");
-    }
-    materials.push(']');
 
     // Generate the variants of the Block enum
     let mut variants = String::new();
@@ -178,22 +188,23 @@ pub fn generate_block_enum(
 // THIS FILE IS GENERATED AUTOMATICALLY.
 // See {this_file}.
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum BlockMaterial {{
+{material_variants}
+}}
+
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Block {{
 {variants}
 }}
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum BlockMaterial {{
-{material_variants}
-}}
-
 impl Block {{
     #[inline]
     pub fn from_id(id: u32) -> Option<Block> {{
         if id < {num_blocks} {{
-            Some(unsafe{{std::mem::transmute(id)}})
+            // SAFETY: Block has repr(u32) and it is a simple type
+            Some(unsafe{{*(&raw const id).cast::<Block>()}})
         }} else {{
             None
         }}
@@ -224,15 +235,19 @@ impl Block {{
     }}
 
     #[inline]
-    pub fn material(self) -> BlockMaterial {{
-        unsafe {{*MATERIALS.get_unchecked((self as u32) as usize)}}
+    pub fn is_material(self, material: BlockMaterial) -> bool {{
+		let materials = unsafe {{MATERIALS.get_unchecked((self as u32) as usize)}};
+		materials.contains(&(material as u8))
     }}
 }}
 
 impl From<super::block_states::BlockWithState> for Block {{
     #[inline]
     fn from(block_with_state: super::block_states::BlockWithState) -> Block {{
-		unsafe{{std::mem::transmute(std::mem::discriminant(block_with_state))}}
+        // Every BlockWithState variant corresponds to the Block with the same id.
+        // Because of this, the discriminants of associated blocks are equal.
+        // See the comments on https://doc.rust-lang.org/stable/core/mem/fn.discriminant.html
+		unsafe{{*(&raw const block_with_state).cast::<Block>()}}
     }}
 }}
 
@@ -253,7 +268,7 @@ impl<'a> MinecraftPacketPart<'a> for Block {{
 
 const INTERNAL_NAMES: [&str; {num_blocks}] = {internal_names:?};
 const DISPLAY_NAMES: [&str; {num_blocks}] = {display_names:?};
-const MATERIALS: [BlockMaterial; {num_blocks}] = {materials};
+const MATERIALS: [[u8; 3]; {num_blocks}] = {block_materials:?};
 "#,
         this_file = file!(),
         internal_names = blocks.iter().map(|b| &b.internal_name).collect::<Vec<_>>(),
@@ -289,13 +304,16 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
                 break;
             }
         }
-        if !already_defined_enums.contains(&enum_definition.type_name(block_name, competing_definitions)) {
+        if !already_defined_enums
+            .contains(&enum_definition.type_name(block_name, competing_definitions))
+        {
             enum_definitions_string
                 .push_str(&enum_definition.define_enum(block_name, competing_definitions));
             enum_definitions_string.push('\n');
             enum_definitions_string.push('\n');
 
-            already_defined_enums.push(enum_definition.type_name(block_name, competing_definitions));
+            already_defined_enums
+                .push(enum_definition.type_name(block_name, competing_definitions));
         }
     }
 
@@ -408,9 +426,9 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
             match state.ty.as_str() {
                 "enum" => {
                     state_calculations.push_str(&format!(
-                            "\n\t\t\t\tlet {}: {} = unsafe{{std::mem::transmute(field_value as u8)}};\n",
-                            name, ty
-                        ));
+                        "\n\t\t\t\tlet {}: {} = unsafe{{std::mem::transmute(field_value as u8)}};\n",
+                        name, ty
+                    ));
                 }
                 "int" => {
                     let values: Vec<i128> = state

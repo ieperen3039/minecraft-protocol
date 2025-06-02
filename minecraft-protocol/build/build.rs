@@ -183,30 +183,6 @@ fn main() {
         entities.sort_by_key(|entity| entity.id);
         entities
     };
-    let item_recipes = {
-        let recipes_url = format!(
-            "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/recipes.json",
-            file_locations.get("recipes").unwrap()
-        );
-        let recipes_data = get_data(
-            &recipes_url,
-            &format!("{target}/cache-recipes-{}.json", VERSION),
-        );
-
-        let mut item_recipes: HashMap<u32, Vec<Recipe>> =
-            serde_json::from_value(recipes_data).expect("Invalid recipes");
-
-        // Count recipes
-        for recipes in item_recipes.values_mut() {
-            let old_len = recipes.len();
-            recipes.retain(|recipe| !matches!(recipe, Recipe::DoubleShaped { .. }));
-            if recipes.len() != old_len {
-                println!("Contains a double shaped recipe, which support has been removed as an optimization. It needs to be enabled again if required by future minecraft updates.");
-            }
-        }
-
-        item_recipes
-    };
 
     items::generate_item_enum(&items);
     entities::generate_entity_enum(&entities);

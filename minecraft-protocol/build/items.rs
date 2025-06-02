@@ -37,7 +37,8 @@ impl Item {{
     #[inline]
     pub fn from_id(id: u32) -> Option<Item> {{
         if id < {max_value} {{
-            Some(unsafe{{std::mem::transmute(id)}})
+            // SAFETY: Item has repr(u32) and it is a simple type
+            Some(unsafe{{*(&raw const id).cast::<Item>()}})
         }} else {{
             None
         }}
