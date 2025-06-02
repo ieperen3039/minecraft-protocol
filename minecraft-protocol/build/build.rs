@@ -1,7 +1,6 @@
 mod blocks;
 mod entities;
 mod items;
-mod recipes;
 mod json;
 
 use crate::json::*;
@@ -213,5 +212,4 @@ fn main() {
     entities::generate_entity_enum(&entities);
     blocks::generate_block_enum(&blocks);
     blocks::generate_block_with_state_enum(&blocks);
-    recipes::generate_recipes(item_recipes, items);
 }
