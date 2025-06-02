@@ -52,21 +52,6 @@ impl Item {{
     pub fn display_name(self) -> &'static str {{
         unsafe {{*DISPLAY_NAMES.get_unchecked((self as u32) as usize)}}
     }}
-
-    #[inline]
-    pub fn max_stack_size(self) -> u8 {{
-        unsafe {{*STACK_SIZES.get_unchecked((self as u32) as usize)}}
-    }}
-
-    #[inline]
-    pub fn durability(self) -> Option<u16> {{
-        unsafe {{*DURABILITIES.get_unchecked((self as u32) as usize)}}
-    }}
-
-    #[inline]
-    pub fn crafting_recipes(&self) -> &'static [crate::ids::recipes::Recipe] {{
-        crate::ids::recipes::Recipe::get_recipes_for_item(*self)
-    }}
 }}
 
 impl<'a> MinecraftPacketPart<'a> for Item {{
@@ -84,18 +69,12 @@ impl<'a> MinecraftPacketPart<'a> for Item {{
     }}
 }}
 
-const STACK_SIZES: [u8; {max_value}] = {max_stack_sizes:?};
-
-const DURABILITIES: [Option<u16>; {max_value}] = {durabilities:?};
-
 const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
 
 const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
 "#,
         variants = variants,
         max_value = expected,
-        max_stack_sizes = items.iter().map(|i| i.stack_size).collect::<Vec<_>>(),
-        durabilities = items.iter().map(|i| i.max_durability).collect::<Vec<_>>(),
         display_names = items.iter().map(|i| &i.display_name).collect::<Vec<_>>(),
         text_ids = items.iter().map(|i| &i.internal_name).collect::<Vec<_>>(),
     );
