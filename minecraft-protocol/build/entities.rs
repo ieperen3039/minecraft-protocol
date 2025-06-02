@@ -12,29 +12,6 @@ pub fn generate_entity_enum(entities: &Vec<Entity>) {
         expected += 1;
     }
 
-    // Generate the categories array
-    let mut categories = String::new();
-    categories.push('[');
-    for entity in entities {
-        let variant_name = match entity.category.as_str() {
-            "other" => "Other",
-            "living" => "Living",
-            "projectile" => "Projectile",
-            "animal" => "Animal",
-            "ambient" => "Ambient",
-            "hostile" => "Hostile",
-            "water_creature" => "WaterCreature",
-            "mob" => "Mob",
-            "passive" => "Passive",
-            "player" => "Player",
-            unknown_category => panic!("Unknown entity category {}", unknown_category),
-        };
-        categories.push_str("EntityCategory::");
-        categories.push_str(variant_name);
-        categories.push_str(", ");
-    }
-    categories.push(']');
-
     // Generate the variants of the Item enum
     let mut variants = String::new();
     for entity in entities {
@@ -56,20 +33,6 @@ pub enum Entity {{
 {variants}
 }}
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum EntityCategory {{
-    Other,
-    Living,
-    Projectile,
-    Animal,
-    Ambient,
-    Hostile,
-    WaterCreature,
-    Mob,
-    Passive,
-    Player,
-}}
-
 impl Entity {{
     #[inline]
     pub fn from_id(id: u32) -> Option<Entity> {{
@@ -88,11 +51,6 @@ impl Entity {{
     #[inline]
     pub fn display_name(self) -> &'static str {{
         unsafe {{*DISPLAY_NAMES.get_unchecked((self as u32) as usize)}}
-    }}
-
-    #[inline]
-    pub fn category(self) -> EntityCategory {{
-        unsafe {{*CATEGORIES.get_unchecked((self as u32) as usize)}}
     }}
 
     #[inline]
@@ -128,8 +86,6 @@ const WIDTHS: [f32; {max_value}] = {widths:?};
 const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
 
 const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
-
-const CATEGORIES: [EntityCategory; {max_value}] = {categories};
 "#,
         variants = variants,
         max_value = expected,
@@ -137,7 +93,6 @@ const CATEGORIES: [EntityCategory; {max_value}] = {categories};
         widths = entities.iter().map(|e| e.width).collect::<Vec<_>>(),
         display_names = entities.iter().map(|e| &e.display_name).collect::<Vec<_>>(),
         text_ids = entities.iter().map(|e| &e.text_id).collect::<Vec<_>>(),
-        categories = categories,
     );
 
     File::create("src/ids/entities.rs")
