@@ -1,5 +1,8 @@
+use std::fs::File;
+use std::io::Write;
+use convert_case::{Case, Casing};
 use super::*;
-use crate::json::Entity;
+use minecraft_external::json::Entity;
 
 pub fn generate_entity_enum(entities: &Vec<Entity>) {
 

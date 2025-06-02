@@ -9,9 +9,7 @@ build = "build/build.rs"
 minecraft-protocol-derive = {path="../minecraft-protocol-derive"}
 
 [build-dependencies]
-minreq = {version="2.3", features=["https"]}
-serde_json = "1.0"
-serde = {version="1.0", features=["derive"]}
+minecraft-external = {path="../minecraft-external"}
 convert_case = "0.6"
 
 [features]

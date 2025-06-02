@@ -37,7 +37,7 @@ pub enum BoundingBox {
 pub struct BlockState {
     pub name: String,
     #[serde(rename = "type")]
-    pub ty: String,
+    pub state_type: String,
     pub num_values: usize,
     pub values: Option<Vec<String>>,
 }

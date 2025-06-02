@@ -1,4 +1,7 @@
-use super::*;
+use std::fs::File;
+use std::io::Write;
+use convert_case::{Case, Casing};
+use minecraft_external::json::Item;
 
 #[allow(clippy::explicit_counter_loop)]
 pub fn generate_item_enum(items: &Vec<Item>) {

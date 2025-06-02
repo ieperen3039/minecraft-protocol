@@ -1,5 +1,7 @@
 [workspace]
 members = [
+    "minecraft-external",
+    "minecraft-game-logic",
     "minecraft-protocol",
     "minecraft-protocol-derive"
 ]

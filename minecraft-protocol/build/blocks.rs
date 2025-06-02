@@ -1,100 +1,101 @@
+use std::fs::File;
+use std::io::Write;
+use convert_case::{Case, Casing};
 use super::*;
-use crate::json::{Block, BlockState};
+use minecraft_external::json::{Block, BlockState};
 
-impl BlockState {
-    fn type_name(&self, block_name: &str, competing_definitions: bool) -> String {
-        match self.ty.as_str() {
-            "int" => {
-                let values: Vec<i128> = self
-                    .values
-                    .as_ref()
-                    .expect("No values for int block state")
-                    .iter()
-                    .map(|v| v.parse().expect("Invalid block state value: expected int"))
-                    .collect();
-                let mut min_value: i128 = *values.first().unwrap_or(&0);
-                let mut max_value: i128 = *values.first().unwrap_or(&0);
+fn block_state_type_name(block_state: &BlockState, block_name: &str, competing_definitions: bool) -> String {
+    match block_state.state_type.as_str() {
+        "int" => {
+            let values: Vec<i128> = block_state
+                .values
+                .as_ref()
+                .expect("No values for int block state")
+                .iter()
+                .map(|v| v.parse().expect("Invalid block state value: expected int"))
+                .collect();
+            let mut min_value: i128 = *values.first().unwrap_or(&0);
+            let mut max_value: i128 = *values.first().unwrap_or(&0);
 
-                for value in values {
-                    if value < min_value {
-                        min_value = value;
-                    }
-                    if value > max_value {
-                        max_value = value;
-                    }
+            for value in values {
+                if value < min_value {
+                    min_value = value;
                 }
-
-                if min_value >= u8::MIN as i128 && max_value <= u8::MAX as i128 {
-                    return String::from("u8");
+                if value > max_value {
+                    max_value = value;
                 }
-                if min_value >= i8::MIN as i128 && max_value <= i8::MAX as i128 {
-                    return String::from("i8");
-                }
-                if min_value >= u16::MIN as i128 && max_value <= u16::MAX as i128 {
-                    return String::from("u16");
-                }
-                if min_value >= i16::MIN as i128 && max_value <= i16::MAX as i128 {
-                    return String::from("i16");
-                }
-                if min_value >= u32::MIN as i128 && max_value <= u32::MAX as i128 {
-                    return String::from("u32");
-                }
-                if min_value >= i32::MIN as i128 && max_value <= i32::MAX as i128 {
-                    return String::from("i32");
-                }
-                if min_value >= u64::MIN as i128 && max_value <= u64::MAX as i128 {
-                    return String::from("u64");
-                }
-                if min_value >= i64::MIN as i128 && max_value <= i64::MAX as i128 {
-                    return String::from("i64");
-                }
-                String::from("i128")
             }
-            "enum" => match competing_definitions {
-                true => format!(
-                    "{}_{}",
-                    block_name.split("_").last().unwrap_or(block_name),
-                    self.name
-                ),
-                false => self.name.to_string(),
+
+            if min_value >= u8::MIN as i128 && max_value <= u8::MAX as i128 {
+                return String::from("u8");
             }
-            .from_case(Case::Snake)
-            .to_case(Case::UpperCamel),
-            "bool" => String::from("bool"),
-            _ => unimplemented!(),
+            if min_value >= i8::MIN as i128 && max_value <= i8::MAX as i128 {
+                return String::from("i8");
+            }
+            if min_value >= u16::MIN as i128 && max_value <= u16::MAX as i128 {
+                return String::from("u16");
+            }
+            if min_value >= i16::MIN as i128 && max_value <= i16::MAX as i128 {
+                return String::from("i16");
+            }
+            if min_value >= u32::MIN as i128 && max_value <= u32::MAX as i128 {
+                return String::from("u32");
+            }
+            if min_value >= i32::MIN as i128 && max_value <= i32::MAX as i128 {
+                return String::from("i32");
+            }
+            if min_value >= u64::MIN as i128 && max_value <= u64::MAX as i128 {
+                return String::from("u64");
+            }
+            if min_value >= i64::MIN as i128 && max_value <= i64::MAX as i128 {
+                return String::from("i64");
+            }
+            String::from("i128")
         }
+        "enum" => match competing_definitions {
+            true => format!(
+                "{}_{}",
+                block_name.split("_").last().unwrap_or(block_name),
+                block_state.name
+            ),
+            false => block_state.name.to_string(),
+        }
+        .from_case(Case::Snake)
+        .to_case(Case::UpperCamel),
+        "bool" => String::from("bool"),
+        _ => unimplemented!(),
+    }
+}
+
+fn block_state_define_enum(block_state: &BlockState, block_name: &str, competing_definitions: bool) -> String {
+    if block_state.state_type.as_str() != "enum" {
+        panic!("Called defined enum on non-enum");
     }
 
-    fn define_enum(&self, block_name: &str, competing_definitions: bool) -> String {
-        if self.ty.as_str() != "enum" {
-            panic!("Called defined enum on non-enum");
-        }
+    let mut variants = String::new();
+    for (i, value) in block_state
+        .values
+        .as_ref()
+        .expect("Expecting values in enum (state id)")
+        .iter()
+        .enumerate()
+    {
+        variants.push_str(&format!(
+            "\n\t{} = {},",
+            value.from_case(Case::Snake).to_case(Case::UpperCamel),
+            i
+        ));
+    }
 
-        let mut variants = String::new();
-        for (i, value) in self
-            .values
-            .as_ref()
-            .expect("Expecting values in enum (state id)")
-            .iter()
-            .enumerate()
-        {
-            variants.push_str(&format!(
-                "\n\t{} = {},",
-                value.from_case(Case::Snake).to_case(Case::UpperCamel),
-                i
-            ));
-        }
-
-        format!(
-            r#"#[derive(Debug, Clone, Copy)]
+    format!(
+        r#"#[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum {} {{{}
 }}"#,
-            self.type_name(block_name, competing_definitions),
-            variants
-        )
-    }
+        block_state_type_name(block_state, block_name, competing_definitions),
+        variants
+    )
 }
 
 #[allow(clippy::explicit_counter_loop)]
@@ -140,16 +141,22 @@ pub fn generate_block_enum(blocks: &Vec<Block>) {
         block_materials.push([
             material_indices.get(0).cloned().unwrap_or(0),
             material_indices.get(1).cloned().unwrap_or(0),
-            material_indices.get(2).cloned().unwrap_or(0)
+            material_indices.get(2).cloned().unwrap_or(0),
         ]);
         // check if there is any material with 4 elements
-        assert_eq!(material_indices.get(3), None, "{:?} has materials {:?}", &block.display_name, &block.material);
+        assert_eq!(
+            material_indices.get(3),
+            None,
+            "{:?} has materials {:?}",
+            &block.display_name,
+            &block.material
+        );
     }
 
     // Generate the MaterialBlock
     let mut material_variants = String::new();
     for (index, material) in raw_materials.iter().enumerate() {
-        material_variants.push_str(&format!("\t{material} = {index},\n", ));
+        material_variants.push_str(&format!("\t{material} = {index},\n",));
     }
 
     // Generate the variants of the Block enum
@@ -289,7 +296,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
     let mut already_defined_enums = Vec::new();
     for block in blocks {
         for state in &block.states {
-            if state.ty.as_str() == "enum" {
+            if state.state_type.as_str() == "enum" {
                 enum_definitions.push((&block.internal_name, state));
             }
         }
@@ -305,15 +312,15 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
             }
         }
         if !already_defined_enums
-            .contains(&enum_definition.type_name(block_name, competing_definitions))
+            .contains(&block_state_type_name(enum_definition, block_name, competing_definitions))
         {
             enum_definitions_string
-                .push_str(&enum_definition.define_enum(block_name, competing_definitions));
+                .push_str(&block_state_type_name(enum_definition, block_name, competing_definitions));
             enum_definitions_string.push('\n');
             enum_definitions_string.push('\n');
 
             already_defined_enums
-                .push(enum_definition.type_name(block_name, competing_definitions));
+                .push(block_state_type_name(enum_definition, block_name, competing_definitions));
         }
     }
 
@@ -331,8 +338,8 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
                 false => state.name.as_str(),
             };
             let competing_definitions =
-                already_defined_enums.contains(&state.type_name(&block.internal_name, true));
-            let doc = if state.ty == "int" {
+                already_defined_enums.contains(&block_state_type_name(state, &block.internal_name, true));
+            let doc = if state.state_type == "int" {
                 let values: Vec<i128> = state
                     .values
                     .as_ref()
@@ -367,7 +374,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
                 "{}\t\t{}: {},\n",
                 doc,
                 name,
-                state.type_name(&block.internal_name, competing_definitions)
+                block_state_type_name(state, &block.internal_name, competing_definitions)
             ));
         }
         if fields.is_empty() {
@@ -404,8 +411,8 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
         let mut fields = String::new();
         for (i, state) in block.states.iter().enumerate().rev() {
             let competing_definitions =
-                already_defined_enums.contains(&state.type_name(&block.internal_name, true));
-            let ty = state.type_name(&block.internal_name, competing_definitions);
+                already_defined_enums.contains(&block_state_type_name(state, &block.internal_name, true));
+            let ty = block_state_type_name(state, &block.internal_name, competing_definitions);
             let name = match state.name.as_str() {
                 "type" => "ty",
                 _ => &state.name,
@@ -423,7 +430,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
                 ));
             }
 
-            match state.ty.as_str() {
+            match state.state_type.as_str() {
                 "enum" => {
                     state_calculations.push_str(&format!(
                         "\n\t\t\t\tlet {}: {} = unsafe{{std::mem::transmute(field_value as u8)}};\n",
@@ -483,7 +490,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
                 _ => &state.name,
             };
 
-            match state.ty.as_str() {
+            match state.state_type.as_str() {
                 "enum" => {
                     state_reformation.push_str(&format!(
                         "\n\t\t\t\tlet field_value = (*{} as u8) as u32;",
