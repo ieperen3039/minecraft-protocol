@@ -27,6 +27,7 @@ fn main() {
     let mut block_states_rs = File::create("src/ids/block_states.rs").unwrap();
     blocks::generate_block_with_state_enum(&blocks, &mut block_states_rs);
 
-    let mut recipes_rs = File::create("src/ids/recipes.rs").unwrap();
-    recipes::generate_recipes(item_recipes, items, &mut recipes_rs);
+    std::fs::create_dir_all("data").unwrap();
+    let mut recipes_bin = File::create("data/recipes.bin").unwrap();
+    recipes::generate_recipes_binary(item_recipes, &mut recipes_bin);
 }

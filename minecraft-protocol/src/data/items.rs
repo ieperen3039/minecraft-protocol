@@ -2,8 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::*;
 
-// We do not implement Copy, to reduce the chance of item duplication
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Item(u32);
 
 impl Item {
