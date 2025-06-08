@@ -29,6 +29,4 @@ fn main() {
 
     let mut recipes_rs = File::create("src/ids/recipes.rs").unwrap();
     recipes::generate_recipes(item_recipes, items, &mut recipes_rs);
-
-    todo!()
 }

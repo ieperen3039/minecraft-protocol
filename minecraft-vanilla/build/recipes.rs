@@ -4,6 +4,226 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 
+fn to_id_and_count(item: &CountedItem) -> (u32, u8) {
+    match item {
+        CountedItem::IDAndMetadataAndCount { .. } => panic!("Metadata not handled"),
+        CountedItem::IDAndMetadata { .. } => panic!("Metadata not handled"),
+        CountedItem::IDAndCount { id, count } => (*id, *count),
+        CountedItem::ID(id) => (*id, 1),
+    }
+}
+
+fn format_counted_item(item: &CountedItem, items: &[Item]) -> String {
+    let (id, count) = to_id_and_count(item);
+    let item_ident = item_id_to_item(id, items);
+    format!(
+        "CountedItem {{item: Item::{}, count: {}}}",
+        item_ident, count
+    )
+}
+
+fn format_count1_counted_item(item: &CountedItem, items: &[Item]) -> String {
+    let (id, count) = to_id_and_count(item);
+    assert_eq!(count, 1);
+    let item_ident = item_id_to_item(id, items);
+    format!("Item::{}", item_ident)
+}
+
+#[allow(dead_code)]
+fn format_option_item(item: &Option<CountedItem>, items: &[Item]) -> String {
+    match item {
+        Some(item) => format!("Some({})", format_counted_item(item, items)),
+        None => "None".to_string(),
+    }
+}
+
+fn format_option_item_count1(item: &Option<CountedItem>, items: &[Item]) -> String {
+    match item {
+        Some(item) => format!("Some({})", format_count1_counted_item(item, items)),
+        None => "None".to_string(),
+    }
+}
+
+#[allow(dead_code)]
+fn format_shape(shape: &Shape, i: &[Item]) -> String {
+    match shape {
+        Shape::ThreeByThree([[v1, v2, v3], [v4, v5, v6], [v7, v8, v9]]) => {
+            format!(
+                "Shape::ThreeByThree([[{}, {}, {}], [{}, {}, {}], [{}, {}, {}]])",
+                format_option_item(v1, i),
+                format_option_item(v2, i),
+                format_option_item(v3, i),
+                format_option_item(v4, i),
+                format_option_item(v5, i),
+                format_option_item(v6, i),
+                format_option_item(v7, i),
+                format_option_item(v8, i),
+                format_option_item(v9, i)
+            )
+        }
+        Shape::ThreeByTwo([[v1, v2, v3], [v4, v5, v6]]) => {
+            format!(
+                "Shape::ThreeByTwo([[{}, {}, {}], [{}, {}, {}]])",
+                format_option_item(v1, i),
+                format_option_item(v2, i),
+                format_option_item(v3, i),
+                format_option_item(v4, i),
+                format_option_item(v5, i),
+                format_option_item(v6, i)
+            )
+        }
+        Shape::ThreeByOne([[v1, v2, v3]]) => {
+            format!(
+                "Shape::ThreeByOne([[{}, {}, {}]])",
+                format_option_item(v1, i),
+                format_option_item(v2, i),
+                format_option_item(v3, i)
+            )
+        }
+        Shape::TwoByThree([[v1, v2], [v3, v4], [v5, v6]]) => {
+            format!(
+                "Shape::TwoByThree([[{}, {}], [{}, {}], [{}, {}]])",
+                format_option_item(v1, i),
+                format_option_item(v2, i),
+                format_option_item(v3, i),
+                format_option_item(v4, i),
+                format_option_item(v5, i),
+                format_option_item(v6, i)
+            )
+        }
+        Shape::TwoByTwo([[v1, v2], [v3, v4]]) => {
+            format!(
+                "Shape::TwoByTwo([[{}, {}], [{}, {}]])",
+                format_option_item(v1, i),
+                format_option_item(v2, i),
+                format_option_item(v3, i),
+                format_option_item(v4, i)
+            )
+        }
+        Shape::TwoByOne([[v1, v2]]) => {
+            format!(
+                "Shape::TwoByOne([[{}, {}]])",
+                format_option_item(v1, i),
+                format_option_item(v2, i)
+            )
+        }
+        Shape::OneByThree([[v1], [v2], [v3]]) => {
+            format!(
+                "Shape::OneByThree([[{}], [{}], [{}]])",
+                format_option_item(v1, i),
+                format_option_item(v2, i),
+                format_option_item(v3, i)
+            )
+        }
+        Shape::OneByTwo([[v1], [v2]]) => {
+            format!(
+                "Shape::OneByTwo([[{}], [{}]])",
+                format_option_item(v1, i),
+                format_option_item(v2, i)
+            )
+        }
+        Shape::OneByOne([[v1]]) => {
+            format!("Shape::OneByOne([[{}]])", format_option_item(v1, i))
+        }
+    }
+}
+
+fn format_count1_shape(shape: &Shape, i: &[Item]) -> String {
+    match shape {
+        Shape::ThreeByThree([[v1, v2, v3], [v4, v5, v6], [v7, v8, v9]]) => {
+            format!(
+                "Shape::ThreeByThree([[{}, {}, {}], [{}, {}, {}], [{}, {}, {}]])",
+                format_option_item_count1(v1, i),
+                format_option_item_count1(v2, i),
+                format_option_item_count1(v3, i),
+                format_option_item_count1(v4, i),
+                format_option_item_count1(v5, i),
+                format_option_item_count1(v6, i),
+                format_option_item_count1(v7, i),
+                format_option_item_count1(v8, i),
+                format_option_item_count1(v9, i)
+            )
+        }
+        Shape::ThreeByTwo([[v1, v2, v3], [v4, v5, v6]]) => {
+            format!(
+                "Shape::ThreeByTwo([[{}, {}, {}], [{}, {}, {}]])",
+                format_option_item_count1(v1, i),
+                format_option_item_count1(v2, i),
+                format_option_item_count1(v3, i),
+                format_option_item_count1(v4, i),
+                format_option_item_count1(v5, i),
+                format_option_item_count1(v6, i)
+            )
+        }
+        Shape::ThreeByOne([[v1, v2, v3]]) => {
+            format!(
+                "Shape::ThreeByOne([[{}, {}, {}]])",
+                format_option_item_count1(v1, i),
+                format_option_item_count1(v2, i),
+                format_option_item_count1(v3, i)
+            )
+        }
+        Shape::TwoByThree([[v1, v2], [v3, v4], [v5, v6]]) => {
+            format!(
+                "Shape::TwoByThree([[{}, {}], [{}, {}], [{}, {}]])",
+                format_option_item_count1(v1, i),
+                format_option_item_count1(v2, i),
+                format_option_item_count1(v3, i),
+                format_option_item_count1(v4, i),
+                format_option_item_count1(v5, i),
+                format_option_item_count1(v6, i)
+            )
+        }
+        Shape::TwoByTwo([[v1, v2], [v3, v4]]) => {
+            format!(
+                "Shape::TwoByTwo([[{}, {}], [{}, {}]])",
+                format_option_item_count1(v1, i),
+                format_option_item_count1(v2, i),
+                format_option_item_count1(v3, i),
+                format_option_item_count1(v4, i)
+            )
+        }
+        Shape::TwoByOne([[v1, v2]]) => {
+            format!(
+                "Shape::TwoByOne([[{}, {}]])",
+                format_option_item_count1(v1, i),
+                format_option_item_count1(v2, i)
+            )
+        }
+        Shape::OneByThree([[v1], [v2], [v3]]) => {
+            format!(
+                "Shape::OneByThree([[{}], [{}], [{}]])",
+                format_option_item_count1(v1, i),
+                format_option_item_count1(v2, i),
+                format_option_item_count1(v3, i)
+            )
+        }
+        Shape::OneByTwo([[v1], [v2]]) => {
+            format!(
+                "Shape::OneByTwo([[{}], [{}]])",
+                format_option_item_count1(v1, i),
+                format_option_item_count1(v2, i)
+            )
+        }
+        Shape::OneByOne([[v1]]) => {
+            format!("Shape::OneByOne([[{}]])", format_option_item_count1(v1, i))
+        }
+    }
+}
+
+fn item_id_to_item(id: u32, items: &[Item]) -> String {
+    for item in items {
+        if item.id == id {
+            return item
+                .internal_name
+                .from_case(Case::Snake)
+                .to_case(Case::UpperCamel);
+        }
+    }
+
+    panic!("Item ID from recipe not found")
+}
+
 pub fn generate_recipes(
     item_recipes: HashMap<u32, Vec<Recipe>>,
     items: Vec<Item>,
@@ -21,13 +241,13 @@ pub fn generate_recipes(
                 } => {
                     let mut ingredients_string = String::new();
                     for ingredient in ingredients {
-                        ingredients_string.push_str(&ingredient.format_count1(&items));
+                        ingredients_string.push_str(&format_count1_counted_item(ingredient, &items));
                         ingredients_string.push_str(", ");
                     }
 
                     recipes_data.push_str(&format!(
                         "\tRecipe::ShapeLess {{ result: {}, ingredients: &[{}] }},\n",
-                        result.format(&items),
+                        format_counted_item(result, &items),
                         ingredients_string,
                     ));
                     num_recipes += 1;
@@ -35,8 +255,8 @@ pub fn generate_recipes(
                 Recipe::Shaped { result, in_shape } => {
                     recipes_data.push_str(&format!(
                         "\tRecipe::Shaped {{ result: {}, in_shape: {} }},\n",
-                        result.format(&items),
-                        in_shape.format_count1(&items),
+                        format_counted_item(result, &items),
+                        format_count1_shape(in_shape, &items),
                     ));
                     num_recipes += 1;
                 }
@@ -47,9 +267,9 @@ pub fn generate_recipes(
                 } => {
                     recipes_data.push_str(&format!(
                         "\tRecipe::DoubleShaped {{ result: {}, in_shape: {}, out_shape: {} }},\n",
-                        result.format(&items),
-                        in_shape.format_count1(&items),
-                        out_shape.format_count1(&items),
+                        format_counted_item(result, &items),
+                        format_count1_shape(in_shape, &items),
+                        format_count1_shape(out_shape, &items),
                     ));
                     num_recipes += 1;
                 }
@@ -70,25 +290,8 @@ pub fn generate_recipes(
     #[allow(clippy::useless_format)]
     let code = format!(
         r#"//! All crafting recipes
-
-impl Recipe {{
-    /// Returns all the recipes for an item
-    #[inline]
-    pub fn get_recipes_for_item(item: Item) -> &'static [Recipe] {{
-        unsafe {{
-            let (start, end) = SHORTCUTS.get_unchecked(item.id() as usize);
-            RECIPES.get_unchecked(*start..*end)
-        }}
-    }}
-
-    #[inline]
-    pub const fn result(&self) -> &CountedItem {{
-        match self {{
-            Recipe::Shaped {{ result, .. }} => result,
-            Recipe::ShapeLess {{ result, .. }} => result,
-        }}
-    }}
-}}
+use minecraft_protocol::data::recipes::{{CountedItem, Recipe}};
+use crate::data::items::Item;
 
 const RECIPES: [Recipe; {recipes_count}] = [
 {recipes_data}
