@@ -105,8 +105,14 @@ pub fn get_blocks(target: &String, file_locations: &HashMap<String, String>) -> 
                     }
                 }
 
-                if state.name == "facing" && vals.len() == 6 {
-                    state.name.push_str("_anywhere");
+                // hoppers are the only "facing" user without "up"
+                if state.name == "facing" && vals.len() == 5 {
+                    if vals
+                        .iter()
+                        .all(|v| v != "up")
+                    {
+                        state.name.push_str("_hopper");
+                    }
                 }
 
                 // nether portals are the only "axis" user without a y coordinate
