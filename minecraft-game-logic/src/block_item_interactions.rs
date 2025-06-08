@@ -64,6 +64,11 @@ enum ItemDropQuantity {
     },
     /** one or zero, based on chance, unaffected by fortune */
     RandomChance { chance: f32 },
+    /** one or zero, based on chance, with fortune effect from a table */
+    ChanceFromTable {
+        // Every index refers to the level of fortune
+        chance: [f32; 5],
+    },
     /**
      * Zero or more, affected by fortune.
      * Seeds use a binomial distribution by rolling `min` number of times with a given drop probability.
@@ -173,6 +178,13 @@ impl BlockDrops {
             }
             ItemDropQuantity::RandomChance { chance } => {
                 if try_random_chance(rng, *chance) {
+                    1
+                } else {
+                    0
+                }
+            }
+            ItemDropQuantity::ChanceFromTable { chance } => {
+                if try_random_chance(rng, chance[fortune as usize]) {
                     1
                 } else {
                     0
