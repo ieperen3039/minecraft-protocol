@@ -3,7 +3,8 @@ members = [
     "minecraft-external",
     "minecraft-game-logic",
     "minecraft-protocol",
-    "minecraft-protocol-derive"
+    "minecraft-protocol-derive",
+    "minecraft-vanilla"
 ]
 
 workspace.resolver = "2"

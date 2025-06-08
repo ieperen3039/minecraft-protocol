@@ -3,14 +3,9 @@ name = "minecraft-protocol"
 version = "0.1.0"
 authors = ["Mubelotix <mubelotix@gmail.com>"]
 edition = "2018"
-build = "build/build.rs"
 
 [dependencies]
-minecraft-protocol-derive = {path="../minecraft-protocol-derive"}
-
-[build-dependencies]
-minecraft-external = {path="../minecraft-external"}
-convert_case = "0.6"
+minecraft-protocol-derive = { path = "../minecraft-protocol-derive" }
 
 [features]
 all-packets = []

@@ -3,13 +3,7 @@ name = "minecraft-game-logic"
 version = "0.1.0"
 authors = ["Geert van Ieperen <ieperen3039>"]
 edition = "2018"
-build = "build/build.rs"
 
 [dependencies]
-serde_json = "1.0"
-serde = {version="1.0", features=["derive"]}
+serde = { version = "1.0", features = ["derive"] }
 rand_core = "0.9.3"
-minecraft-protocol = {path="../minecraft-protocol"}
-
-[build-dependencies]
-minecraft-external = {path="../minecraft-external"}
