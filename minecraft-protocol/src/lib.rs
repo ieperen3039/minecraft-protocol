@@ -65,7 +65,7 @@
 #![allow(clippy::upper_case_acronyms)]
 
 pub mod components;
-pub mod ids;
+pub mod data;
 pub mod nbt;
 pub mod network;
 pub mod packets;

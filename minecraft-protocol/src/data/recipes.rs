@@ -1,8 +1,12 @@
-//! All crafting recipes
+use std::ops::Range;
+use crate::data::items::Item;
 
-use crate::ids::items::Item;
+pub struct RecipeBook {
+    lookup: Vec<Range<usize>>,
+    recipes: Vec<Recipe>,
+}
 
-/// An [Item](crate::ids::items::Item) associated with a count of this item
+/// An [Item](crate::data::items::Item) associated with a count of this item
 #[derive(Debug, Clone)]
 pub struct CountedItem {
     pub item: Item,
@@ -42,8 +46,23 @@ impl Shape {
 
 #[derive(Debug, Clone)]
 pub enum Recipe {
-    Shaped { in_shape: Shape, result: CountedItem },
-    ShapeLess { ingredients: &'static [Item], result: CountedItem },
+    Shaped {
+        in_shape: Shape,
+        result: CountedItem,
+    },
+    ShapeLess {
+        ingredients: &'static [Item],
+        result: CountedItem,
+    },
+}
+
+impl RecipeBook {
+    /// Returns all the recipes for an item
+    #[inline]
+    pub fn get_recipes_for_item(&self, item: Item) -> &[Recipe] {
+        let range = &self.lookup[item.id() as usize];
+        self.recipes[range]
+    }
 }
 
 impl Recipe {

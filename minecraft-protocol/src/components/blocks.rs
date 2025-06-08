@@ -1,4 +1,4 @@
-use ids::blocks::Block;
+use data::blocks::Block;
 
 use crate::{*, nbt::NbtTag};
 
@@ -112,7 +112,7 @@ impl<'a> MultiBlockChange<'a> {
     }
 
     /// Takes the position of the block relatively to the position of the chunk passed in `chunk_section_position` and the state id of a block.
-    /// Use [Block::get_default_state_id](crate::ids::blocks::Block::get_default_state_id) to get the state id corresponding to a [Block](crate::ids::blocks::Block).
+    /// Use [Block::get_default_state_id](crate::data::blocks::Block::get_default_state_id) to get the state id corresponding to a [Block](crate::data::blocks::Block).
     ///
     /// ```ignore
     /// // get the relative X coordinate
@@ -130,7 +130,7 @@ impl<'a> MultiBlockChange<'a> {
     }
 
     /// Returns the position of the block in the chunk at coordinates `chunk_section_position` and the state id of the block.
-    /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the corresponding [Block](crate::ids::blocks::Block).
+    /// Use [Block::from_state_id](crate::data::blocks::Block::from_state_id) to get the corresponding [Block](crate::data::blocks::Block).
     ///
     /// ```ignore
     /// // get the absolute X coordinate

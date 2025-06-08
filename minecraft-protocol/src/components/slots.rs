@@ -11,9 +11,9 @@ pub struct Slot {
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone, MinecraftPacketPart)]
 pub struct SlotItem {
-    /// The [item](crate::ids::items::Item).
-    /// Item IDs are distinct from [block IDs](crate::ids::blocks::Block); see [crate::ids] for more information.
-    pub item_id: crate::ids::items::Item,
+    /// The [item](crate::data::items::Item).
+    /// Item IDs are distinct from [block IDs](crate::data::blocks::Block); see [crate::data] for more information.
+    pub item_id: crate::data::items::Item,
     pub item_count: i8,
     /// Things like enchantements and durability are encoded in this field.
     pub nbt_data: NbtTag,
@@ -142,7 +142,7 @@ pub enum WindowType {
 
 #[cfg(test)]
 mod tests {
-    use crate::ids::items::Item;
+    use crate::data::items::Item;
     use super::*;
 
     #[test]

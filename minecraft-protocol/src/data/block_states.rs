@@ -1,5 +1,4 @@
 use crate::*;
-use crate::ids::blocks::Block;
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone, Copy)]

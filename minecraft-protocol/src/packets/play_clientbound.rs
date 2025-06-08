@@ -3,8 +3,8 @@ use super::play_serverbound::ServerboundPacket;
 use super::*;
 use crate::components::*;
 use crate::components::players::DeathLocation;
-use crate::ids::blocks;
-use crate::ids::*;
+use crate::data::blocks;
+use crate::data::*;
 use crate::nbt::NbtTag;
 
 #[cfg_attr(test, derive(PartialEq))]

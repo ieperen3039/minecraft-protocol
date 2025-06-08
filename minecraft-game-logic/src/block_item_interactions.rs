@@ -1,4 +1,4 @@
-use minecraft_protocol::ids::{blocks::Block, items::Item};
+use minecraft_protocol::data::{blocks::Block, items::Item};
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -97,7 +97,7 @@ pub enum ItemDropQuantity {
 }
 
 #[derive(Serialize, Deserialize)]
-struct WeightedDrop {
+pub struct WeightedDrop {
     // Every index refers to the level of fortune
     weight: [u32; 5],
     result: ItemDrop,
@@ -113,7 +113,7 @@ impl BlockDrops {
         }
     }
 
-    fn get_drops(
+    pub fn get_drops(
         &self,
         block: Block,
         held_item: Item,

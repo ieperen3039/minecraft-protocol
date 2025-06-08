@@ -600,7 +600,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>, file: &mut File) {
     let code = format!(
         r#"//! Contains the [BlockWithState] enum to help with block state IDs.
 use minecraft_protocol::{{packets::VarInt, MinecraftPacketPart}};
-use crate::ids::blocks::Block;
+use crate::data::blocks::Block;
 
 {enum_definitions_string}
 

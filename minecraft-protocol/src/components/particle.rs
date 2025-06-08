@@ -8,7 +8,7 @@ pub enum Particle {
     AngryVillager,
     Barrier,
     Block {
-        /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the block.
+        /// Use [Block::from_state_id](crate::data::blocks::Block::from_state_id) to get the block.
         block_state_id: VarInt,
     },
     Bubble,
@@ -40,7 +40,7 @@ pub enum Particle {
     ExplosionEmitter,
     Explosion,
     FallingDust {
-        /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the block.
+        /// Use [Block::from_state_id](crate::data::blocks::Block::from_state_id) to get the block.
         block_state_id: VarInt,
     },
     Firework,

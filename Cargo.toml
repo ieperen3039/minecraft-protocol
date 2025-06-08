@@ -7,4 +7,4 @@ members = [
     "minecraft-vanilla"
 ]
 
-workspace.resolver = "2"
+workspace.resolver = "3"

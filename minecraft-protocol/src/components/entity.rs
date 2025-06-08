@@ -184,7 +184,7 @@ pub enum EntityMetadataValue<'a> {
     BlockId {
         block_id: VarInt,
     },
-    /// Use [Block::from_state_id](crate::ids::blocks::Block::from_state_id) to get the block.
+    /// Use [Block::from_state_id](crate::data::blocks::Block::from_state_id) to get the block.
     OptionBlockStateID {
         /// 0 for absent (implies air); otherwise, a block state ID as per the global palette
         block_state_id: VarInt,
