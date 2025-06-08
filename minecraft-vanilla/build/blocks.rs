@@ -197,7 +197,7 @@ pub fn generate_block_enum(blocks: &Vec<Block>, file: &mut File) {
 
     // Generate the code
     let code = format!(
-        r#"use crate::*;
+        r#"use minecraft_protocol::{{packets::VarInt, MinecraftPacketPart}};
 
 // THIS FILE IS GENERATED AUTOMATICALLY.
 // See {this_file}.
@@ -599,8 +599,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>, file: &mut File) {
     // Generate the code
     let code = format!(
         r#"//! Contains the [BlockWithState] enum to help with block state IDs.
-            
-use crate::*;
+use minecraft_protocol::{{packets::VarInt, MinecraftPacketPart}};
 use crate::ids::blocks::Block;
 
 {enum_definitions_string}

@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
 use crate::*;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Block(u32);
 
 impl Block {

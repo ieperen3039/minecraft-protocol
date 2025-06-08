@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 minecraft-protocol-derive = { path = "../minecraft-protocol-derive" }
+serde = { version = "1.0", features = ["derive"] }
 
 [features]
 all-packets = []

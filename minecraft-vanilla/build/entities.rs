@@ -25,7 +25,7 @@ pub fn generate_entity_enum(entities: &Vec<Entity>, file: &mut File) {
 
     // Generate the code
     let code = format!(
-        r#"use crate::*;
+        r#"use minecraft_protocol::{{packets::VarInt, MinecraftPacketPart}};
 
 /// See [implementations](#implementations) for useful methods.
 #[repr(u32)]
