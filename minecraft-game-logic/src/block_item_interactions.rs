@@ -1,9 +1,10 @@
-use minecraft_protocol::ids::blocks::Block;
-use minecraft_protocol::ids::items::Item;
+use minecraft_protocol::ids::{blocks::Block, items::Item};
 use rand_core::RngCore;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-struct BlockDrops {
+#[derive(Serialize, Deserialize)]
+pub struct BlockDrops {
     // Which tools will result in a drop from the `tool_drops` table
     block_tools: HashMap<Block, Vec<Item>>,
     // What drops when mined using the appropriate tool
@@ -14,7 +15,8 @@ struct BlockDrops {
     silk_touch_drops: HashMap<Block, DropTable>,
 }
 
-enum DropTable {
+#[derive(Serialize, Deserialize)]
+pub enum DropTable {
     // single kind of item
     Single(ItemDrop),
     // multiple different items
@@ -23,12 +25,14 @@ enum DropTable {
     OneOfMultiple(Vec<WeightedDrop>),
 }
 
-struct ItemDrop {
-    item: Item,
-    quantity: ItemDropQuantity,
+#[derive(Serialize, Deserialize)]
+pub struct ItemDrop {
+    pub item: Item,
+    pub quantity: ItemDropQuantity,
 }
 
-enum ItemDropQuantity {
+#[derive(Serialize, Deserialize)]
+pub enum ItemDropQuantity {
     /** Exactly one of the item, like stone */
     Single,
     /** Always a fixed quantity of the item, like 4-sided vines */
@@ -92,6 +96,7 @@ enum ItemDropQuantity {
     },
 }
 
+#[derive(Serialize, Deserialize)]
 struct WeightedDrop {
     // Every index refers to the level of fortune
     weight: [u32; 5],
@@ -99,6 +104,15 @@ struct WeightedDrop {
 }
 
 impl BlockDrops {
+    pub fn new() -> Self {
+        Self {
+            block_tools: HashMap::new(),
+            tool_drops: HashMap::new(),
+            hand_drops: HashMap::new(),
+            silk_touch_drops: HashMap::new(),
+        }
+    }
+
     fn get_drops(
         &self,
         block: Block,
@@ -154,8 +168,9 @@ impl BlockDrops {
 
                 let mut target_weight = get_random_int(rng, total_of_weights);
                 for drop in drops {
-                    if target_weight >= drop.weight[fortune as usize] {
-                        target_weight -= drop.weight;
+                    let weight = drop.weight[fortune as usize];
+                    if target_weight >= weight {
+                        target_weight -= weight;
                     } else {
                         Self::process_item_drop(&drop.result, fortune, rng, drops_out);
                     }
@@ -238,7 +253,7 @@ impl BlockDrops {
         };
 
         for _ in 0..quantity {
-            drops_out.push(drop_logic.item);
+            drops_out.push(drop_logic.item.clone());
         }
     }
 }
@@ -247,7 +262,7 @@ impl BlockDrops {
 // May return 0.0, will never return 1.0.
 fn get_random_float(rng: &mut dyn RngCore) -> f32 {
     // We add one to the denominator, to avoid getting exactly 1.0.
-    (rng.next_u32() as f32) / (u32::MAX as f32 + 1)
+    (rng.next_u32() as f32) / (u32::MAX as f32 + 1.0)
 }
 
 fn get_random_int(rng: &mut dyn RngCore, highest_value: u32) -> u32 {

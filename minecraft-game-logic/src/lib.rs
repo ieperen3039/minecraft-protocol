@@ -1,1 +1,1 @@
-mod block_item_interactions;
+pub mod block_item_interactions;

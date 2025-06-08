@@ -1,10 +1,13 @@
+use convert_case::{Case, Casing};
+use minecraft_external::json::{Block, BlockState};
 use std::fs::File;
 use std::io::Write;
-use convert_case::{Case, Casing};
-use super::*;
-use minecraft_external::json::{Block, BlockState};
 
-fn block_state_type_name(block_state: &BlockState, block_name: &str, competing_definitions: bool) -> String {
+fn block_state_type_name(
+    block_state: &BlockState,
+    block_name: &str,
+    competing_definitions: bool,
+) -> String {
     match block_state.state_type.as_str() {
         "int" => {
             let values: Vec<i128> = block_state
@@ -67,7 +70,11 @@ fn block_state_type_name(block_state: &BlockState, block_name: &str, competing_d
     }
 }
 
-fn block_state_define_enum(block_state: &BlockState, block_name: &str, competing_definitions: bool) -> String {
+fn block_state_define_enum(
+    block_state: &BlockState,
+    block_name: &str,
+    competing_definitions: bool,
+) -> String {
     if block_state.state_type.as_str() != "enum" {
         panic!("Called defined enum on non-enum");
     }
@@ -99,7 +106,7 @@ pub enum {} {{{}
 }
 
 #[allow(clippy::explicit_counter_loop)]
-pub fn generate_block_enum(blocks: &Vec<Block>) {
+pub fn generate_block_enum(blocks: &Vec<Block>, file: &mut File) {
     // Look for missing blocks in the array
     let mut expected = 0;
     for block in blocks {
@@ -282,14 +289,11 @@ const MATERIALS: [[u8; 3]; {num_blocks}] = {block_materials:?};
         display_names = blocks.iter().map(|b| &b.display_name).collect::<Vec<_>>(),
     );
 
-    File::create("src/ids/blocks.rs")
-        .unwrap()
-        .write_all(code.as_bytes())
-        .unwrap()
+    file.write_all(code.as_bytes()).unwrap()
 }
 
 #[allow(clippy::explicit_counter_loop)]
-pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
+pub fn generate_block_with_state_enum(blocks: &Vec<Block>, file: &mut File) {
     // Generate the enum definitions
     let mut enum_definitions = Vec::new();
     let mut enum_definitions_string = String::new();
@@ -311,16 +315,24 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
                 break;
             }
         }
-        if !already_defined_enums
-            .contains(&block_state_type_name(enum_definition, block_name, competing_definitions))
-        {
-            enum_definitions_string
-                .push_str(&block_state_define_enum(enum_definition, block_name, competing_definitions));
+        if !already_defined_enums.contains(&block_state_type_name(
+            enum_definition,
+            block_name,
+            competing_definitions,
+        )) {
+            enum_definitions_string.push_str(&block_state_define_enum(
+                enum_definition,
+                block_name,
+                competing_definitions,
+            ));
             enum_definitions_string.push('\n');
             enum_definitions_string.push('\n');
 
-            already_defined_enums
-                .push(block_state_type_name(enum_definition, block_name, competing_definitions));
+            already_defined_enums.push(block_state_type_name(
+                enum_definition,
+                block_name,
+                competing_definitions,
+            ));
         }
     }
 
@@ -337,8 +349,11 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
                 true => "ty",
                 false => state.name.as_str(),
             };
-            let competing_definitions =
-                already_defined_enums.contains(&block_state_type_name(state, &block.internal_name, true));
+            let competing_definitions = already_defined_enums.contains(&block_state_type_name(
+                state,
+                &block.internal_name,
+                true,
+            ));
             let doc = if state.state_type == "int" {
                 let values: Vec<i128> = state
                     .values
@@ -410,8 +425,11 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
         let mut state_calculations = String::new();
         let mut fields = String::new();
         for (i, state) in block.states.iter().enumerate().rev() {
-            let competing_definitions =
-                already_defined_enums.contains(&block_state_type_name(state, &block.internal_name, true));
+            let competing_definitions = already_defined_enums.contains(&block_state_type_name(
+                state,
+                &block.internal_name,
+                true,
+            ));
             let ty = block_state_type_name(state, &block.internal_name, competing_definitions);
             let name = match state.name.as_str() {
                 "type" => "ty",
@@ -667,8 +685,5 @@ mod tests {{
         max_block_state_id = blocks.last().unwrap().max_state_id
     );
 
-    File::create("src/ids/block_states.rs")
-        .unwrap()
-        .write_all(code.as_bytes())
-        .unwrap()
+    file.write_all(code.as_bytes()).unwrap()
 }

@@ -142,6 +142,7 @@ pub enum WindowType {
 
 #[cfg(test)]
 mod tests {
+    use crate::ids::items::Item;
     use super::*;
 
     #[test]
@@ -151,7 +152,7 @@ mod tests {
             .unwrap()
             .item
             .unwrap();
-        assert_eq!(deserialized.item_id, crate::ids::items::Item::Stone);
+        assert_eq!(deserialized.item_id, Item::from_id(1));
         assert_eq!(deserialized.item_count, 1);
         assert!(matches!(deserialized.nbt_data, NbtTag::Null));
     }

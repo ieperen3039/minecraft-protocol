@@ -1,11 +1,10 @@
-use std::fs::File;
-use std::io::Write;
 use convert_case::{Case, Casing};
 use minecraft_external::json::Item;
+use std::fs::File;
+use std::io::Write;
 
 #[allow(clippy::explicit_counter_loop)]
-pub fn generate_item_enum(items: &Vec<Item>) {
-
+pub fn generate_item_enum(items: &Vec<Item>, file: &mut File) {
     // Look for missing items in the array
     let mut expected = 0;
     for item in items {
@@ -83,8 +82,5 @@ const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
         text_ids = items.iter().map(|i| &i.internal_name).collect::<Vec<_>>(),
     );
 
-    File::create("src/ids/items.rs")
-        .unwrap()
-        .write_all(code.as_bytes())
-        .unwrap();
+    file.write_all(code.as_bytes()).unwrap();
 }

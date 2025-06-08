@@ -162,7 +162,7 @@ impl BlockEntity {
 
     pub fn z(&self) -> i32 { (self.packed_xz & 0b1111) as i32 }
 
-    pub fn get_block(&self) -> Block { Block::from_id(self.ty.0 as u32).expect("invalid block id") }
+    pub fn get_block(&self) -> Block { Block::from_id(self.ty.0 as u32) }
 }
 
 #[cfg(test)]

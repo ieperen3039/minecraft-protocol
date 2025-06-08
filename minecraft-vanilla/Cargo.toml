@@ -1,0 +1,13 @@
+[package]
+name = "minecraft-vanilla"
+authors = ["Geert van Ieperen <ieperen3039>"]
+version = "0.1.0"
+edition = "2024"
+build = "build/build.rs"
+
+[dependencies]
+minecraft-protocol = { path = "../minecraft-protocol" }
+
+[build-dependencies]
+minecraft-external = { path = "../minecraft-external" }
+convert_case = "0.6"

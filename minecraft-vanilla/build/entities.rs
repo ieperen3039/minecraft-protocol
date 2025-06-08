@@ -1,11 +1,9 @@
+use convert_case::{Case, Casing};
+use minecraft_external::json::Entity;
 use std::fs::File;
 use std::io::Write;
-use convert_case::{Case, Casing};
-use super::*;
-use minecraft_external::json::Entity;
 
-pub fn generate_entity_enum(entities: &Vec<Entity>) {
-
+pub fn generate_entity_enum(entities: &Vec<Entity>, file: &mut File) {
     // Look for missing items in the array
     let mut expected = 0;
     for entity in entities {
@@ -98,8 +96,5 @@ const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
         text_ids = entities.iter().map(|e| &e.text_id).collect::<Vec<_>>(),
     );
 
-    File::create("src/ids/entities.rs")
-        .unwrap()
-        .write_all(code.as_bytes())
-        .unwrap()
+    file.write_all(code.as_bytes()).unwrap()
 }
