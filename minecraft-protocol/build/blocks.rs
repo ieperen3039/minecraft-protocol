@@ -315,7 +315,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
             .contains(&block_state_type_name(enum_definition, block_name, competing_definitions))
         {
             enum_definitions_string
-                .push_str(&block_state_type_name(enum_definition, block_name, competing_definitions));
+                .push_str(&block_state_define_enum(enum_definition, block_name, competing_definitions));
             enum_definitions_string.push('\n');
             enum_definitions_string.push('\n');
 
@@ -585,7 +585,7 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>) {
 use crate::*;
 use crate::ids::blocks::Block;
 
-{enum_definitions}
+{enum_definitions_string}
 
 /// Can be converted for free to [super::blocks::Block] which implements [useful methods](super::blocks::Block#implementations).
 #[cfg_attr(test, derive(PartialEq))]
@@ -661,7 +661,6 @@ mod tests {{
     }}
 }}
 "#,
-        enum_definitions = enum_definitions_string,
         state_id_match_arms = state_id_match_arms,
         state_id_rebuild_arms = state_id_rebuild_arms,
         variants = variants,

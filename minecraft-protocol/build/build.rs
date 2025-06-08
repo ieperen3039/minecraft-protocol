@@ -11,7 +11,7 @@ fn main() {
         "cargo:rerun-if-changed={target}/cache-file-location-{}.json",
         VERSION
     );
-    println!("cargo:rerun-if-changed=build");
+    println!("cargo:rerun-if-changed=build.rs");
 
     let file_locations = get_file_locations(&target);
     let items = get_items(&target, &file_locations);
