@@ -2,6 +2,7 @@ mod blocks;
 mod entities;
 mod items;
 mod recipes;
+mod block_drops;
 
 use minecraft_external::game_data;
 use std::fs::File;
@@ -14,6 +15,7 @@ fn main() {
     let blocks = game_data::get_blocks(&target, &file_locations);
     let entities = game_data::get_entities(&target, &file_locations);
     let item_recipes = game_data::get_recipes(&target, &file_locations);
+    let block_drops = game_data::get_block_drops(&target, &file_locations);
 
     let mut items_rs = File::create("src/ids/items.rs").unwrap();
     items::generate_item_enum(&items, &mut items_rs);
@@ -30,4 +32,7 @@ fn main() {
     std::fs::create_dir_all("data").unwrap();
     let mut recipes_bin = File::create("data/recipes.bin").unwrap();
     recipes::generate_recipes_binary(item_recipes, &mut recipes_bin);
+
+    let mut block_drops_bin = File::create("data/block_drops.bin").unwrap();
+    block_drops::generate_block_drop_binary(&block_drops, &blocks, &items, &mut block_drops_bin);
 }

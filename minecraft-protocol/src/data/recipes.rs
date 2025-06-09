@@ -1,10 +1,10 @@
+use crate::data::items::Item;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::Range;
-use serde::{Deserialize, Serialize};
-use crate::data::items::Item;
 
 #[derive(Serialize, Deserialize)]
-pub struct RecipeBook {
+pub struct RecipeRegistry {
     lookup: Vec<Range<usize>>,
     recipes: Vec<Recipe>,
 }
@@ -59,7 +59,7 @@ pub enum Recipe {
     },
 }
 
-impl RecipeBook {
+impl RecipeRegistry {
     pub fn build(recipes: Vec<Recipe>) -> Self {
         let mut item_recipes: HashMap<u32, Vec<Recipe>> = HashMap::new();
 
@@ -77,12 +77,14 @@ impl RecipeBook {
         for item_id in 0..max_item_id {
             if let Some(recipe_list) = item_recipes.remove(&item_id) {
                 let idx_in_array = recipes.len();
-                lookup.push(idx_in_array .. idx_in_array + recipe_list.len());
+                lookup.push(idx_in_array..idx_in_array + recipe_list.len());
                 recipes.extend(recipe_list);
+            } else {
+                lookup.push(recipes.len()..recipes.len());
             }
         }
 
-        RecipeBook { lookup, recipes }
+        RecipeRegistry { lookup, recipes }
     }
 
     /// Returns all the recipes for an item

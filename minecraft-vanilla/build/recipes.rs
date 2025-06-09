@@ -3,7 +3,7 @@ use minecraft_protocol::data;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
-use minecraft_protocol::data::recipes::RecipeBook;
+use minecraft_protocol::data::recipes::RecipeRegistry;
 
 fn to_counted_item(item: CountedItem) -> data::recipes::CountedItem {
     match item {
@@ -65,7 +65,7 @@ pub fn generate_recipes_binary(
         }
     }
 
-    let recipes = RecipeBook::build(out_recipes);
+    let recipes = RecipeRegistry::build(out_recipes);
     let encoded = bincode::serde::encode_to_vec(&recipes, bincode::config::standard())
         .expect("Failed to encode recipes");
 

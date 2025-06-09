@@ -26,26 +26,19 @@ pub fn generate_item_enum(items: &Vec<Item>, file: &mut File) {
 
     // Generate the code
     let code = format!(
-        r#"use minecraft_protocol::{{packets::VarInt, MinecraftPacketPart}};
+        r#"
+// THIS FILE IS GENERATED AUTOMATICALLY.
+// See {this_file}.
 
-/// See [implementations](#implementations) for useful methods.
+use minecraft_protocol::data::items::Item;
+
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Item {{
+pub enum ItemId {{
 {variants}
 }}
 
-impl Item {{
-    #[inline]
-    pub fn from_id(id: u32) -> Option<Item> {{
-        if id < {max_value} {{
-            // SAFETY: Item has repr(u32) and it is a simple type
-            Some(unsafe{{*(&raw const id).cast::<Item>()}})
-        }} else {{
-            None
-        }}
-    }}
-
+impl ItemId {{
     #[inline]
     pub fn text_id(self) -> &'static str {{
         unsafe {{*TEXT_IDS.get_unchecked((self as u32) as usize)}}
@@ -57,25 +50,23 @@ impl Item {{
     }}
 }}
 
-impl<'a> MinecraftPacketPart<'a> for Item {{
-    #[inline]
-    fn serialize_minecraft_packet_part(self, output: &mut Vec<u8>) -> Result<(), &'static str> {{
-        VarInt(self as i32).serialize_minecraft_packet_part(output)
-    }}
+impl From<Item> for ItemId {{
+	fn from(value: Item) -> Self {{
+		unsafe {{ std::mem::transmute(value) }}
+	}}
+}}
 
-    #[inline]
-    fn deserialize_minecraft_packet_part(input: &'a[u8]) -> Result<(Self, &'a[u8]), &'static str> {{
-        let (id, input) = VarInt::deserialize_minecraft_packet_part(input)?;
-        let id = std::cmp::max(id.0, 0) as u32;
-        let item = Item::from_id(id).ok_or("No item corresponding to the specified numeric ID.")?;
-        Ok((item, input))
-    }}
+impl From<ItemId> for Item {{
+	fn from(value: ItemId) -> Self {{
+		unsafe {{ std::mem::transmute(value) }}
+	}}
 }}
 
 const DISPLAY_NAMES: [&str; {max_value}] = {display_names:?};
 
 const TEXT_IDS: [&str; {max_value}] = {text_ids:?};
 "#,
+        this_file = file!(),
         variants = variants,
         max_value = expected,
         display_names = items.iter().map(|i| &i.display_name).collect::<Vec<_>>(),

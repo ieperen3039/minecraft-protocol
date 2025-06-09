@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
-pub struct BlockDrops {
+pub struct BlockDropRegistry {
     // Which tools will result in a drop from the `tool_drops` table
     block_tools: HashMap<Block, Vec<Item>>,
     // What drops when mined using the appropriate tool
@@ -103,7 +103,7 @@ pub struct WeightedDrop {
     result: ItemDrop,
 }
 
-impl BlockDrops {
+impl BlockDropRegistry {
     pub fn new() -> Self {
         Self {
             block_tools: HashMap::new(),
@@ -113,6 +113,29 @@ impl BlockDrops {
         }
     }
 
+    /// Overrides all existing drops for the given block.
+    pub fn set_block_drops(
+        &mut self,
+        block: Block,
+        with_tool: DropTable,
+        with_hands: DropTable,
+        with_silk_touch: DropTable,
+    ) {
+        self.tool_drops.insert(block, with_tool);
+        self.hand_drops.insert(block, with_hands);
+        self.silk_touch_drops.insert(block, with_silk_touch);
+    }
+
+    /// Appends the given list of tools to the set of accepted tools for the given block
+    pub fn add_tools(&mut self, block: Block, tools: &[Item]) {
+        self.block_tools
+            .entry(block)
+            .or_insert_with(Vec::new)
+            .extend(tools);
+    }
+
+    /// Fills the drops_out vector with the drops for the given block.
+    /// Multiple calls with the same arguments will yield different results, due to rng.
     pub fn get_drops(
         &self,
         block: Block,

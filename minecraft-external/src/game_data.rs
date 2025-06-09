@@ -186,6 +186,19 @@ pub fn get_recipes(target: &String, file_locations: &HashMap<String, String>) ->
     item_recipes
 }
 
+pub fn get_block_drops(target: &String, file_locations: &HashMap<String, String>) -> Vec<BlockDropMapping> {
+    let block_drops_url = format!(
+        "https://github.com/PrismarineJS/minecraft-data/raw/master/data/{}/blockLoot.json",
+        file_locations.get("blockLoot").unwrap()
+    );
+    let block_drops_data = get_data(
+        &block_drops_url,
+        &format!("{target}/cache-block-loot-{}.json", VERSION),
+    );
+
+    serde_json::from_value(block_drops_data).expect("Invalid block loot data")
+}
+
 pub fn get_file_locations(target: &String) -> HashMap<String, String> {
     let mut file_locations = get_data(
         "https://raw.githubusercontent.com/PrismarineJS/minecraft-data/master/data/dataPaths.json",

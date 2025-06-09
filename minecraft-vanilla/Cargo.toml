@@ -12,5 +12,6 @@ bincode = { version = "2.0.1", features = ["serde"] }
 [build-dependencies]
 minecraft-external = { path = "../minecraft-external" }
 minecraft-protocol = { path = "../minecraft-protocol" }
+minecraft-game-logic = { path = "../minecraft-game-logic" }
 bincode = { version = "2.0.1", features = ["serde"] }
 convert_case = "0.6"

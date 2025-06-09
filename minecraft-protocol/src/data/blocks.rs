@@ -5,10 +5,12 @@ use crate::*;
 pub struct Block(u32);
 
 impl Block {
+    #[inline]
     pub fn id(&self) -> u32 {
         self.0
     }
 
+    #[inline]
     pub fn from_id(id: u32) -> Block {
         Block(id)
     }
