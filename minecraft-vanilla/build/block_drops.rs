@@ -1,8 +1,13 @@
 use minecraft_external::json;
-use minecraft_game_logic::block_item_interactions::*;
+use minecraft_game_logic::block_drop_registry::*;
 use minecraft_protocol::data::{blocks::Block, items::Item};
 use std::fs::File;
 use std::io::Write;
+
+// Currently impossible to encode:
+//  * sea pickles have "stackSizeRange": [4, 4] and state data with the name "pickles" that specify how much must be dropped
+//  * every type of candle has "stackSizeRange": [4, 4] and state data with the name "candles" that specify how much must be dropped
+//  * beehive drop bee entities (if there are bees in the hive, which is not part of the state data)
 
 pub fn generate_block_drop_binary(
     block_drops: &Vec<json::BlockDropMapping>,
@@ -21,7 +26,7 @@ pub fn generate_block_drop_binary(
         let tools: Vec<Item> = block
             .harvest_tools
             .iter()
-            .filter_map(|(tool, is_tool)| if *is_tool { Some(tool) } else { None })
+            .filter_map(|(tool, is_tool)| if *is_tool { Some(*tool) } else { None })
             .map(Item::from_id)
             .collect();
 
@@ -34,20 +39,26 @@ pub fn generate_block_drop_binary(
         for drop_entry in drop_mapping.drops {
             let item = items
                 .iter()
-                .find(|i| i.internal_name == drop_entry.item_internal_name);
+                .find(|item| item.internal_name == drop_entry.item_internal_name)
+                .expect(format!("Item {} not found", drop_entry.item_internal_name).as_str())
+                .to_owned();
+
+            let item = Item::from_id(item.id);
 
             // TODO drop_entry.drop_chance is broken
             let quantity = {
                 // TODO this must be far more advanced
-                let (min, max) = drop_entry.stack_size_range;
-                if min == -1 {
-                    // drop quantity depends on item metadata
+                let [min, max] = drop_entry.stack_size_range;
+                if min == None || min == Some(-1) {
+                    // TODO drop quantity depends on exact block state
                     ItemDropQuantity::FixedMultiple(1)
                 } else if min == max {
                     ItemDropQuantity::Single
+                } else if min.is_some() && max.is_some() {
+                    ItemDropQuantity::RandomRange { min: min.unwrap() as usize, max: max.unwrap() as usize }
                 } else {
-                    ItemDropQuantity::RandomRange { min, max }
-                };
+                    panic!("min == {} && max == {}", min, max)
+                }
             };
 
             if drop_entry.silk_touch == Some(true) {
@@ -63,8 +74,15 @@ pub fn generate_block_drop_binary(
             }
         }
 
-        registry.set_block_drops(blocks, with_tool, with_hands, with_silk_touch);
+        let with_tool = to_drop_table(with_tool);
+        let with_hands = to_drop_table(with_hands);
+        let with_silk_touch = to_drop_table(with_silk_touch);
+
+        registry.set_block_drops(Block::from_id(block.id), with_tool, with_hands, with_silk_touch);
     }
+
+    // handle special cases
+
 
     todo!();
 
@@ -72,4 +90,12 @@ pub fn generate_block_drop_binary(
         .expect("Failed to encode recipes");
 
     file.write_all(&encoded).unwrap()
+}
+
+fn to_drop_table(mut drops: Vec<ItemDrop>) -> Option<DropTable> {
+    match drops.len() {
+        0 => None,
+        1 => Some(DropTable::Single(drops.pop().unwrap())),
+        _ => Some(DropTable::MultipleIndependent(drops))
+    }
 }
