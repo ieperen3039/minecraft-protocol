@@ -1,8 +1,20 @@
+use serde::{Deserialize, Serialize};
 use crate::*;
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BlockWithState(u32);
+
+impl BlockWithState {
+    #[inline]
+    pub fn id(&self) -> u32 {
+        self.0
+    }
+
+    #[inline]
+    pub fn from_id(id: u32) -> BlockWithState {
+        BlockWithState(id)
+    }
+}
 
 impl<'a> MinecraftPacketPart<'a> for BlockWithState {
     #[inline]

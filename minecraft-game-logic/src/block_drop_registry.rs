@@ -1,21 +1,29 @@
-use minecraft_protocol::data::{blocks::Block, items::Item};
+use minecraft_protocol::data::{block_states::BlockWithState, blocks::Block, items::Item};
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use crate::block_state_registry::BlockRegistry;
 
+/// Database for translating blocks to item drops.
+/// Use `get_drops` to query.
+// Some
 #[derive(Serialize, Deserialize)]
 pub struct BlockDropRegistry {
-    // Which tools will result in a drop from the `tool_drops` table
+    // Which tools will result in a drop from the `tool_drops` table.
+    // NOTE: for some blocks, this is different from the "appropriate" tool
     block_tools: HashMap<Block, Vec<Item>>,
-    // What drops when mined using the appropriate tool
-    tool_drops: HashMap<Block, DropTable>,
-    // What drops when mined by hand
-    hand_drops: HashMap<Block, DropTable>,
+    // What drops when mined using the appropriate tool.
+    // If the block is not in this list, hand_drops is used
+    tool_drops: HashMap<BlockWithState, DropTable>,
     // What drops when mined with silk touch
-    silk_touch_drops: HashMap<Block, DropTable>,
+    // If the block is not in this list, hand_drops is used
+    silk_touch_drops: HashMap<BlockWithState, DropTable>,
+    // What drops when mined by hand.
+    // If the block is not in this list, nothing is dropped
+    hand_drops: HashMap<BlockWithState, DropTable>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum DropTable {
     // single kind of item
     Single(ItemDrop),
@@ -25,13 +33,13 @@ pub enum DropTable {
     OneOfMultiple(Vec<WeightedDrop>),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ItemDrop {
     pub item: Item,
     pub quantity: ItemDropQuantity,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub enum ItemDropQuantity {
     /** Exactly one of the item, like stone */
     Single,
@@ -42,18 +50,20 @@ pub enum ItemDropQuantity {
         min: usize,
         max: usize, // inclusive
     },
-    /** A random quantity. Fortune increases the maximum number of drops by 1 per level. */
+    /** A random quantity. Fortune increases the maximum number of drops. */
     RandomRangeFortune {
         min: usize,
         max: usize, // inclusive
+        fortune_increase: usize,
     },
     /**
-     * A random quantity with a strict upper limit. Fortune increases the maximum number of drops by 1 per level.
+     * A random quantity with a strict upper limit. Fortune increases the maximum number of drops.
      * If a drop higher than the maximum is rolled, it is rounded down to the capacity.
      */
     RandomRangeFortuneMax {
         min: usize,
         max: usize, // inclusive
+        fortune_increase: usize,
         capacity: usize,
     },
     /**
@@ -96,7 +106,7 @@ pub enum ItemDropQuantity {
     },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct WeightedDrop {
     // Every index refers to the level of fortune
     weight: [u32; 5],
@@ -108,37 +118,43 @@ impl BlockDropRegistry {
         Self {
             block_tools: HashMap::new(),
             tool_drops: HashMap::new(),
-            hand_drops: HashMap::new(),
             silk_touch_drops: HashMap::new(),
+            hand_drops: HashMap::new(),
         }
     }
 
     /// Overrides all existing drops for the given block.
     pub fn set_block_drops(
         &mut self,
-        block: Block,
-        with_tool: DropTable,
-        with_hands: DropTable,
-        with_silk_touch: DropTable,
+        block: BlockWithState,
+        with_tool: Option<DropTable>,
+        with_silk_touch: Option<DropTable>,
+        with_hands: Option<DropTable>,
     ) {
-        self.tool_drops.insert(block, with_tool);
-        self.hand_drops.insert(block, with_hands);
-        self.silk_touch_drops.insert(block, with_silk_touch);
+        if let Some(with_tool) = with_tool {
+            self.tool_drops.insert(block, with_tool);
+        }
+
+        if let Some(with_hands) = with_hands {
+            self.hand_drops.insert(block, with_hands);
+        }
+
+        if let Some(with_silk_touch) = with_silk_touch {
+            self.silk_touch_drops.insert(block, with_silk_touch);
+        }
     }
 
     /// Appends the given list of tools to the set of accepted tools for the given block
-    pub fn add_tools(&mut self, block: Block, tools: &[Item]) {
-        self.block_tools
-            .entry(block)
-            .or_insert_with(Vec::new)
-            .extend(tools);
+    pub fn set_tools(&mut self, block: Block, tools: Vec<Item>) {
+        self.block_tools.insert(block, tools);
     }
 
     /// Fills the drops_out vector with the drops for the given block.
     /// Multiple calls with the same arguments will yield different results, due to rng.
     pub fn get_drops(
         &self,
-        block: Block,
+        block_registry: BlockRegistry,
+        block_state: BlockWithState,
         held_item: Item,
         silk_touch: bool,
         fortune: u32,
@@ -146,26 +162,26 @@ impl BlockDropRegistry {
         drops_out: &mut Vec<Item>,
     ) {
         if silk_touch {
-            if let Some(drop) = self.silk_touch_drops.get(&block) {
+            if let Some(drop) = self.silk_touch_drops.get(&block_state) {
                 Self::process_drop_table(drop, fortune, rng, drops_out);
             }
-            // else it drops nothing
-            return;
+            // else the block already drops itself, or never drops anything
         }
+
+        let block = block_registry.block_state_to_block(&block_state);
 
         if let Some(tools) = self.block_tools.get(&block) {
             if tools.contains(&held_item) {
-                if let Some(tool_drop) = self.tool_drops.get(&block) {
+                if let Some(tool_drop) = self.tool_drops.get(&block_state) {
                     Self::process_drop_table(tool_drop, fortune, rng, drops_out);
                     return;
                 }
-                // else it drops nothing
-                return;
+                // else it drops the same as when mined by hand
             }
             // else the inappropriate tool is used, and we use hand_drops.
         }
 
-        if let Some(hand_drop) = self.hand_drops.get(&block) {
+        if let Some(hand_drop) = self.hand_drops.get(&block_state) {
             Self::process_drop_table(hand_drop, fortune, rng, drops_out);
             return;
         }
@@ -228,12 +244,12 @@ impl BlockDropRegistry {
                     0
                 }
             }
-            ItemDropQuantity::RandomRangeFortune { min, max } => {
-                let max = max + fortune as usize;
+            ItemDropQuantity::RandomRangeFortune { min, max, fortune_increase } => {
+                let max = max + (fortune as usize) * fortune_increase;
                 min + get_random_int(rng, (max - min) as u32) as usize
             }
-            ItemDropQuantity::RandomRangeFortuneMax { min, max, capacity } => {
-                let max = max + fortune as usize;
+            ItemDropQuantity::RandomRangeFortuneMax { min, max, capacity, fortune_increase } => {
+                let max = max + (fortune as usize) * fortune_increase;
                 let drops = min + get_random_int(rng, (max - min) as u32) as usize;
                 usize::min(drops, usize::from(*capacity))
             }
