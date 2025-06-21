@@ -1,7 +1,7 @@
 use minecraft_protocol::data::block_states::BlockWithState;
 use minecraft_protocol::data::blocks::Block;
 use serde::{Deserialize, Serialize};
-use std::ops::{Range, RangeInclusive};
+use std::ops::RangeInclusive;
 
 /// Database for translating between block state ids and block ids.
 // one block maps to multiple block states

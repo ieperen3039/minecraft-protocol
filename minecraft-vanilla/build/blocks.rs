@@ -211,6 +211,7 @@ pub fn generate_block_enum(blocks: &Vec<Block>, file: &mut File) {
 // See {this_file}.
 
 use minecraft_protocol::data::blocks::Block;
+use minecraft_protocol::data::block_states::BlockWithState;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BlockMaterial {{
@@ -255,11 +256,10 @@ impl BlockId {{
     }}
 }}
 
-
 impl From<Block> for BlockId {{
 	fn from(value: Block) -> Self {{
 		assert!(value.id() < {num_blocks});
-		unsafe {{ std::mem::transmute(value) }}
+		unsafe {{ std::mem::transmute(value.id()) }}
 	}}
 }}
 
@@ -269,9 +269,9 @@ impl From<BlockId> for Block {{
 	}}
 }}
 
-impl From<super::block_states::BlockWithState> for BlockId {{
+impl From<super::block_states::BlockWithStateId> for BlockId {{
     #[inline]
-    fn from(block_with_state: super::block_states::BlockWithState) -> BlockId {{
+    fn from(block_with_state: super::block_states::BlockWithStateId) -> BlockId {{
         // Every BlockWithState variant corresponds to the Block with the same id.
         // Because of this, the discriminants of associated blocks are equal.
         // See the comments on https://doc.rust-lang.org/stable/core/mem/fn.discriminant.html
@@ -411,11 +411,11 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>, file: &mut File) {
 
         if block.states.is_empty() {
             state_id_match_arms.push_str(&format!(
-                "\n\t\t\t{} => Some(BlockWithState::{}),",
+                "\n\t\t\t{} => Some(BlockWithStateId::{}),",
                 start, name
             ));
             state_id_rebuild_arms.push_str(&format!(
-                "\n\t\t\tBlockWithState::{} => Some({}),",
+                "\n\t\t\tBlockWithStateId::{} => Some({}),",
                 name, start
             ));
             continue;
@@ -580,13 +580,13 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>, file: &mut File) {
             {}..={} => {{
                 state_id -= {};
                 {}
-                Some(BlockWithState::{}{{ {}}})
+                Some(BlockWithStateId::{}{{ {}}})
             }},",
             start, stop, start, state_calculations, name, fields
         ));
         state_id_rebuild_arms.push_str(&format!(
             "
-            BlockWithState::{}{{ {}}} => {{
+            BlockWithStateId::{}{{ {}}} => {{
                 {}
                 state_id += {};
                 Some(state_id)
@@ -602,21 +602,21 @@ pub fn generate_block_with_state_enum(blocks: &Vec<Block>, file: &mut File) {
 // See {this_file}.
 
 use minecraft_protocol::{{packets::VarInt, MinecraftPacketPart}};
+use minecraft_protocol::data::block_states::BlockWithState;
 use crate::ids::blocks::BlockId;
 
 {enum_definitions_string}
 
-/// Can be converted for free to [super::blocks::BlockId] which implements [useful methods](super::blocks::BlockId#implementations).
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 #[repr(u32)]
-pub enum BlockWithState {{
+pub enum BlockWithStateId {{
 {variants}
 }}
 
-impl BlockWithState {{
+impl BlockWithStateId {{
     #[inline]
-    pub fn from_state_id(mut state_id: u32) -> Option<BlockWithState> {{
+    pub fn from_id(mut state_id: u32) -> Option<BlockWithStateId> {{
         match state_id {{
 {state_id_match_arms}
             _ => None,
@@ -632,13 +632,13 @@ impl BlockWithState {{
     /// Get the textual identifier of this block.
     #[inline]
     pub fn internal_name(self) -> &'static str {{
-        self.to_block().internal_name()
+        BlockId::from(self).internal_name()
     }}
 
     /// Get the english in-game name of this block.
     #[inline]
     pub fn display_name(self) -> &'static str {{
-        self.to_block().display_name()
+        BlockId::from(self).display_name()
     }}
 
     /// Returns the block state id.
@@ -651,19 +651,17 @@ impl BlockWithState {{
     }}
 }}
 
-impl<'a> MinecraftPacketPart<'a> for BlockWithState {{
-    #[inline]
-    fn serialize_minecraft_packet_part(self, _output: &mut Vec<u8>) -> Result<(), &'static str> {{
-        VarInt::from(self.block_state_id().unwrap_or(0)).serialize_minecraft_packet_part(_output)
-    }}
+impl From<BlockWithState> for BlockWithStateId {{
+	fn from(value: BlockWithState) -> Self {{
+		assert!(value.id() <= 24134);
+		Self::from_id(value.id()).unwrap()
+	}}
+}}
 
-    #[inline]
-    fn deserialize_minecraft_packet_part(input: &'a[u8]) -> Result<(Self, &'a[u8]), &'static str> {{
-        let (id, input) = VarInt::deserialize_minecraft_packet_part(input)?;
-        let id = std::cmp::max(id.0, 0) as u32;
-        let block_with_state = BlockWithState::from_state_id(id).ok_or("No block corresponding to the specified block state ID.")?;
-        Ok((block_with_state, input))
-    }}
+impl From<BlockWithStateId> for BlockWithState {{
+	fn from(value: BlockWithStateId) -> Self {{
+		BlockWithState::from_id(value.block_state_id().unwrap())
+	}}
 }}
 
 #[cfg(test)]
@@ -673,7 +671,7 @@ mod tests {{
     #[test]
     fn test_block_states() {{
         for id in 0..={max_block_state_id} {{
-            let block = BlockWithState::from_state_id(id).unwrap();
+            let block = BlockWithStateId::from_id(id).unwrap();
             let id_from_block = block.block_state_id().unwrap();
             assert_eq!(id, id_from_block);
         }}

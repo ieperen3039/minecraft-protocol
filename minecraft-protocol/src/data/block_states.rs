@@ -1,6 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::*;
-use crate::data::blocks::Block;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct BlockWithState(u32);

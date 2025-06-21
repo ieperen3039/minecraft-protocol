@@ -132,7 +132,7 @@ pub fn get_block_drop_registry(
         }
     }
 
-    /// handle special cases
+    // handle special cases
     handle_leaves(blocks, items, &mut registry);
     handle_candles(blocks, items, &mut registry);
     handle_sea_pickles(blocks, items, &mut registry);
@@ -330,7 +330,7 @@ fn get_state_value(
     let mut state_remainder = relative_state_id;
 
     for block_state in block_states {
-        let field_value = relative_state_id % (block_state.num_values as u32);
+        let field_value = state_remainder % (block_state.num_values as u32);
 
         if block_state.name == target_state {
             return Some(field_value);
