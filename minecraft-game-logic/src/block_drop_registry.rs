@@ -1,8 +1,8 @@
+use crate::block_state_registry::BlockRegistry;
 use minecraft_protocol::data::{block_states::BlockWithState, blocks::Block, items::Item};
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::block_state_registry::BlockRegistry;
 
 /// Database for translating blocks to item drops.
 /// Use `get_drops` to query.
@@ -44,7 +44,7 @@ pub enum ItemDropQuantity {
     /** Exactly one of the item, like stone */
     Single,
     /** Always a fixed quantity of the item, like 4-sided vines */
-    FixedMultiple(usize),
+    FixedMultiple { quantity: usize },
     /** A random quantity unaffected by fortune */
     RandomRange {
         min: usize,
@@ -111,6 +111,16 @@ pub struct WeightedDrop {
     // Every index refers to the level of fortune
     weight: [u32; 5],
     result: ItemDrop,
+}
+
+impl DropTable {
+    pub fn from_vec(mut drops: Vec<ItemDrop>) -> Option<DropTable> {
+        match drops.len() {
+            0 => None,
+            1 => Some(DropTable::Single(drops.pop().unwrap())),
+            _ => Some(DropTable::MultipleIndependent(drops)),
+        }
+    }
 }
 
 impl BlockDropRegistry {
@@ -226,7 +236,7 @@ impl BlockDropRegistry {
     ) {
         let quantity = match &drop_logic.quantity {
             ItemDropQuantity::Single => 1,
-            ItemDropQuantity::FixedMultiple(quantity) => *quantity,
+            ItemDropQuantity::FixedMultiple{ quantity } => *quantity,
             ItemDropQuantity::RandomRange { min, max } => {
                 min + get_random_int(rng, (max - min) as u32) as usize
             }
@@ -244,11 +254,20 @@ impl BlockDropRegistry {
                     0
                 }
             }
-            ItemDropQuantity::RandomRangeFortune { min, max, fortune_increase } => {
+            ItemDropQuantity::RandomRangeFortune {
+                min,
+                max,
+                fortune_increase,
+            } => {
                 let max = max + (fortune as usize) * fortune_increase;
                 min + get_random_int(rng, (max - min) as u32) as usize
             }
-            ItemDropQuantity::RandomRangeFortuneMax { min, max, capacity, fortune_increase } => {
+            ItemDropQuantity::RandomRangeFortuneMax {
+                min,
+                max,
+                capacity,
+                fortune_increase,
+            } => {
                 let max = max + (fortune as usize) * fortune_increase;
                 let drops = min + get_random_int(rng, (max - min) as u32) as usize;
                 usize::min(drops, usize::from(*capacity))

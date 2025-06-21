@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use crate::*;
+use crate::data::blocks::Block;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct BlockWithState(u32);
 
 impl BlockWithState {
@@ -13,6 +14,12 @@ impl BlockWithState {
     #[inline]
     pub fn from_id(id: u32) -> BlockWithState {
         BlockWithState(id)
+    }
+}
+
+impl Default for BlockWithState {
+    fn default() -> Self {
+        BlockWithState(0)
     }
 }
 
