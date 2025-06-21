@@ -76,7 +76,7 @@ pub struct BlockItemDrop {
     pub stack_size_range: [Option<i32>; 2],
     /// The required age of the block for the item drop to occur
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub block_age: Option<f64>,
+    pub block_age: Option<i32>,
     /// If silk touch is required
     #[serde(skip_serializing_if = "Option::is_none")]
     pub silk_touch: Option<bool>,
