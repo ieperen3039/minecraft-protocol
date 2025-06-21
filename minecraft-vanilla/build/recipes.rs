@@ -30,10 +30,9 @@ fn to_item(item: &CountedItem) -> data::items::Item {
     }
 }
 
-pub fn generate_recipes_binary(
-    item_recipes: HashMap<u32, Vec<Recipe>>,
-    file: &mut File,
-) {
+pub fn get_recipes_registry(
+    item_recipes: HashMap<u32, Vec<Recipe>>
+) -> RecipeRegistry {
     let mut out_recipes = Vec::new();
 
     // Generate recipes
@@ -65,11 +64,7 @@ pub fn generate_recipes_binary(
         }
     }
 
-    let recipes = RecipeRegistry::build(out_recipes);
-    let encoded = bincode::serde::encode_to_vec(&recipes, bincode::config::standard())
-        .expect("Failed to encode recipes");
-
-    file.write_all(&encoded).unwrap()
+    RecipeRegistry::build(out_recipes)
 }
 
 fn transmute_shape(shape: Shape) -> data::recipes::Shape {

@@ -2,6 +2,7 @@ use convert_case::{Case, Casing};
 use minecraft_external::json::{Block, BlockState};
 use std::fs::File;
 use std::io::Write;
+use minecraft_game_logic::block_state_registry::BlockRegistry;
 
 fn block_state_type_name(
     block_state: &BlockState,
@@ -103,6 +104,14 @@ pub enum {} {{{}
         block_state_type_name(block_state, block_name, competing_definitions),
         variants
     )
+}
+
+pub fn get_block_registry(blocks: &Vec<Block>) -> BlockRegistry {
+    let block_id_to_block_state_id = blocks.iter()
+        .map(|b| (b.id, b.min_state_id..=b.max_state_id))
+        .collect();
+
+    BlockRegistry::build(block_id_to_block_state_id)
 }
 
 #[allow(clippy::explicit_counter_loop)]

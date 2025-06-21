@@ -6,6 +6,7 @@ mod block_drops;
 
 use minecraft_external::game_data;
 use std::fs::File;
+use std::io::Write;
 
 fn main() {
     let target = std::env::var("OUT_DIR").expect("Set CARGO_TARGET_DIR to the target directory");
@@ -16,6 +17,8 @@ fn main() {
     let entities = game_data::get_entities(&target, &file_locations);
     let item_recipes = game_data::get_recipes(&target, &file_locations);
     let block_drops = game_data::get_block_drops(&target, &file_locations);
+
+    std::fs::create_dir_all("data").unwrap();
 
     let mut items_rs = File::create("src/ids/items.rs").unwrap();
     items::generate_item_enum(&items, &mut items_rs);
@@ -29,10 +32,25 @@ fn main() {
     let mut block_states_rs = File::create("src/ids/block_states.rs").unwrap();
     blocks::generate_block_with_state_enum(&blocks, &mut block_states_rs);
 
-    std::fs::create_dir_all("data").unwrap();
     let mut recipes_bin = File::create("data/recipes.bin").unwrap();
-    recipes::generate_recipes_binary(item_recipes, &mut recipes_bin);
+    let recipes_registry = recipes::get_recipes_registry(item_recipes);
+    let encoded = bincode::serde::encode_to_vec(&recipes_registry, bincode::config::standard())
+        .expect("Failed to encode recipes");
+    recipes_bin.write_all(&encoded).unwrap();
+    drop(recipes_bin);
+
+    let mut blocks_bin = File::create("data/blocks.bin").unwrap();
+    let block_registry = blocks::get_block_registry(&blocks);
+    let encoded = bincode::serde::encode_to_vec(&block_registry, bincode::config::standard())
+        .expect("Failed to encode blocks");
+    blocks_bin.write_all(&encoded).unwrap();
+    drop(blocks_bin);
 
     let mut block_drops_bin = File::create("data/block_drops.bin").unwrap();
-    block_drops::generate_block_drop_binary(&block_drops, &blocks, &items, &mut block_drops_bin);
+    let drop_registry = block_drops::get_block_drop_registry(&block_registry, &block_drops, &blocks, &items);
+
+    let encoded = bincode::serde::encode_to_vec(&drop_registry, bincode::config::standard())
+        .expect("Failed to encode block drops");
+    block_drops_bin.write_all(&encoded).unwrap();
+    drop(block_drops_bin);
 }
