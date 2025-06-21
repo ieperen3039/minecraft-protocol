@@ -1,9 +1,7 @@
 use minecraft_external::json::*;
 use minecraft_protocol::data;
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::prelude::*;
 use minecraft_protocol::data::recipes::RecipeRegistry;
+use std::collections::HashMap;
 
 fn to_counted_item(item: CountedItem) -> data::recipes::CountedItem {
     match item {
