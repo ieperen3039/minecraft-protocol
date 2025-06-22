@@ -23,7 +23,7 @@ mod tests {
 
         let states = registry.block_to_block_states(&Block::from(BlockId::OakSlab));
 
-        for state_id in states {
+        for state_id in states.clone() {
             let element = BlockWithStateId::from_id(state_id).expect("invalid state id");
 
             match element {
@@ -31,5 +31,8 @@ mod tests {
                 _ => panic!("state {} maps to {:?}", state_id, element)
             }
         }
+
+        // (top, bottom and double slab) * (waterlogged or not)
+        assert_eq!(states.count(), 3 * 2);
     }
 }
