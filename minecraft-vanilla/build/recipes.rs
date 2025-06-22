@@ -1,17 +1,17 @@
 use minecraft_external::json::*;
 use minecraft_protocol::data;
-use minecraft_protocol::data::recipes::RecipeRegistry;
+use minecraft_game_logic::recipes::RecipeRegistry;
 use std::collections::HashMap;
 
-fn to_counted_item(item: CountedItem) -> data::recipes::CountedItem {
+fn to_counted_item(item: CountedItem) -> minecraft_game_logic::recipes::CountedItem {
     match item {
         CountedItem::IDAndMetadataAndCount { .. } => panic!("Metadata not handled"),
         CountedItem::IDAndMetadata { .. } => panic!("Metadata not handled"),
-        CountedItem::IDAndCount { id, count } => data::recipes::CountedItem {
+        CountedItem::IDAndCount { id, count } => minecraft_game_logic::recipes::CountedItem {
             item: data::items::Item::from_id(id),
             count,
         },
-        CountedItem::ID(id) => data::recipes::CountedItem {
+        CountedItem::ID(id) => minecraft_game_logic::recipes::CountedItem {
             item: data::items::Item::from_id(id),
             count: 1,
         },
@@ -41,7 +41,7 @@ pub fn get_recipes_registry(
                     result,
                     ingredients,
                 } => {
-                    out_recipes.push(data::recipes::Recipe::ShapeLess {
+                    out_recipes.push(minecraft_game_logic::recipes::Recipe::ShapeLess {
                         result: to_counted_item(result),
                         ingredients: ingredients
                             .iter()
@@ -50,7 +50,7 @@ pub fn get_recipes_registry(
                     });
                 }
                 Recipe::Shaped { result, in_shape } => {
-                    out_recipes.push(data::recipes::Recipe::Shaped {
+                    out_recipes.push(minecraft_game_logic::recipes::Recipe::Shaped {
                         in_shape: transmute_shape(in_shape),
                         result: to_counted_item(result),
                     })
@@ -65,19 +65,19 @@ pub fn get_recipes_registry(
     RecipeRegistry::build(out_recipes)
 }
 
-fn transmute_shape(shape: Shape) -> data::recipes::Shape {
+fn transmute_shape(shape: Shape) -> minecraft_game_logic::recipes::Shape {
     match shape {
         Shape::ThreeByThree(shape) => {
-            data::recipes::Shape::ThreeByThree(transmute_shape_inner(shape))
+            minecraft_game_logic::recipes::Shape::ThreeByThree(transmute_shape_inner(shape))
         }
-        Shape::ThreeByTwo(shape) => data::recipes::Shape::ThreeByTwo(transmute_shape_inner(shape)),
-        Shape::ThreeByOne(shape) => data::recipes::Shape::ThreeByOne(transmute_shape_inner(shape)),
-        Shape::TwoByThree(shape) => data::recipes::Shape::TwoByThree(transmute_shape_inner(shape)),
-        Shape::TwoByTwo(shape) => data::recipes::Shape::TwoByTwo(transmute_shape_inner(shape)),
-        Shape::TwoByOne(shape) => data::recipes::Shape::TwoByOne(transmute_shape_inner(shape)),
-        Shape::OneByThree(shape) => data::recipes::Shape::OneByThree(transmute_shape_inner(shape)),
-        Shape::OneByTwo(shape) => data::recipes::Shape::OneByTwo(transmute_shape_inner(shape)),
-        Shape::OneByOne(shape) => data::recipes::Shape::OneByOne(transmute_shape_inner(shape)),
+        Shape::ThreeByTwo(shape) => minecraft_game_logic::recipes::Shape::ThreeByTwo(transmute_shape_inner(shape)),
+        Shape::ThreeByOne(shape) => minecraft_game_logic::recipes::Shape::ThreeByOne(transmute_shape_inner(shape)),
+        Shape::TwoByThree(shape) => minecraft_game_logic::recipes::Shape::TwoByThree(transmute_shape_inner(shape)),
+        Shape::TwoByTwo(shape) => minecraft_game_logic::recipes::Shape::TwoByTwo(transmute_shape_inner(shape)),
+        Shape::TwoByOne(shape) => minecraft_game_logic::recipes::Shape::TwoByOne(transmute_shape_inner(shape)),
+        Shape::OneByThree(shape) => minecraft_game_logic::recipes::Shape::OneByThree(transmute_shape_inner(shape)),
+        Shape::OneByTwo(shape) => minecraft_game_logic::recipes::Shape::OneByTwo(transmute_shape_inner(shape)),
+        Shape::OneByOne(shape) => minecraft_game_logic::recipes::Shape::OneByOne(transmute_shape_inner(shape)),
     }
 }
 

@@ -1,4 +1,4 @@
-use minecraft_protocol::data::recipes::RecipeRegistry;
+use minecraft_game_logic::recipes::RecipeRegistry;
 
 pub fn get_recipes() -> RecipeRegistry {
     let (result, _) = bincode::serde::decode_from_slice(
@@ -14,7 +14,7 @@ pub fn get_recipes() -> RecipeRegistry {
 mod tests {
     use super::*;
     use minecraft_protocol::data::items::Item;
-    use minecraft_protocol::data::recipes::Shape;
+    use minecraft_game_logic::recipes::Shape;
     use crate::ids::items::ItemId;
 
     #[test]

@@ -1,4 +1,4 @@
-use crate::data::items::Item;
+use minecraft_protocol::data::items::Item;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::Range;
@@ -9,7 +9,7 @@ pub struct RecipeRegistry {
     recipes: Vec<Recipe>,
 }
 
-/// An [Item](crate::data::items::Item) associated with a count of this item
+/// An [Item](minecraft_protocol::data::items::Item) associated with a count of this item
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CountedItem {
     pub item: Item,
