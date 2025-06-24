@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::*;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash, Default)]
 pub struct Block(u32);
 
 impl Block {
@@ -13,12 +13,6 @@ impl Block {
     #[inline]
     pub fn from_id(id: u32) -> Block {
         Block(id)
-    }
-}
-
-impl Default for Block {
-    fn default() -> Self {
-        Block(0)
     }
 }
 

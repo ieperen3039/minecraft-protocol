@@ -1,6 +1,7 @@
 use minecraft_protocol::data::block_states::BlockWithState;
 use minecraft_protocol::data::blocks::Block;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::ops::RangeInclusive;
 
 /// Database for translating between block state ids and block ids.
@@ -23,49 +24,57 @@ pub struct BlockRegistry {
 
 /// Allows for the identification of a specific block state value, based on just the relative state
 /// index of the block
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct BlockState {
     /// the base block of this state
     pub block: Block,
     /// the multiplication of all num_values of all states of the base block before the target state
+    /// or 1 if this is the first state
     pub offset: u32,
     /// the number of possible values in this state
     pub num_values: u32,
 }
 
 impl BlockRegistry {
-    pub fn build(block_states: Vec<BlockState>, num_blocks: usize) -> BlockRegistry {
+    pub fn build(blocks: HashMap<Block, Vec<u32>>) -> BlockRegistry {
+        let num_blocks = blocks.len();
         let mut block_id_to_max_block_state_id = vec![0; num_blocks];
-        let mut block_id_to_num_block_state_values = vec![0; num_blocks];
         let mut block_state_lookup = vec![0; num_blocks];
 
-        for (block_state_index, state) in block_states.iter().enumerate() {
-            let block_index = state.block.id() as usize;
-
-            // make sure block_state_lookup contains the highest state index
-            let lookup_value = &mut block_state_lookup[block_index];
-            *lookup_value = usize::max(*lookup_value, block_state_index);
-
-            // count the number of block states for this block
-            block_id_to_num_block_state_values[block_index] += state.num_values as usize;
-        }
-
-        let num_block_state_values = block_id_to_num_block_state_values.iter().sum();
+        let num_block_state_values = blocks.values().flatten().map(|&s| s as usize).sum();
         let mut block_state_id_to_block_id = vec![Block::default(); num_block_state_values];
+        let mut block_state_list = vec![BlockState::default(); num_block_state_values];
 
         // now we have collected the total number of states for each block, we can calculate the max state value for each block
-        let mut num_block_state_values_counter = 0;
-        for (block_index, num_values) in block_id_to_num_block_state_values.iter().enumerate() {
-            num_block_state_values_counter += num_values;
+        let mut total_num_states = 0;
+        for (block, state_sizes) in blocks {
+            let mut multiplicative_offset = 1;
+            for num_values in state_sizes {
+                block_state_list.push(BlockState {
+                    block,
+                    offset: multiplicative_offset,
+                    num_values,
+                });
 
-            block_id_to_max_block_state_id[block_index as u32] = num_block_state_values_counter - 1;
+                for _ in 0..num_values {
+                    block_state_id_to_block_id[total_num_states] = block;
+                    total_num_states += 1;
+                }
+
+                multiplicative_offset *= num_values;
+            }
+
+            block_state_lookup[block.id() as usize] = block_state_list.len();
+            block_id_to_max_block_state_id[block.id() as usize] = (total_num_states - 1) as u32;
         }
+
+        assert_eq!(total_num_states, num_block_state_values);
 
         BlockRegistry {
             block_id_to_max_block_state_id,
             block_state_id_to_block_id,
-            block_state_list : block_states,
-            block_state_lookup
+            block_state_list,
+            block_state_lookup,
         }
     }
 

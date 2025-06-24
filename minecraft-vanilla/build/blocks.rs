@@ -1,9 +1,9 @@
 use convert_case::{Case, Casing};
 use minecraft_external::json::{Block, BlockState};
+use minecraft_game_logic::block_state_registry::BlockRegistry;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
-use minecraft_game_logic::block_state_registry as registry;
-use minecraft_game_logic::block_state_registry::BlockRegistry;
 
 use minecraft_protocol::data::blocks as protocol;
 
@@ -110,24 +110,17 @@ pub enum {} {{{}
 }
 
 pub fn get_block_registry(blocks: &Vec<Block>) -> BlockRegistry {
-    let mut block_states = Vec::new();
+    let mut block_mapping: HashMap<protocol::Block, Vec<u32>> = HashMap::new();
 
-    for json_block in blocks {
-        let block = protocol::Block::from_id(json_block.id);
-        let mut offset_accumulator = 0;
-
-        for state in json_block.states {
-            block_states.push(registry::BlockState {
-                block,
-                offset: offset_accumulator,
-                num_values: state.num_values as u32,
-            });
-
-            offset_accumulator *= state.num_values;
+    for block in blocks {
+        let mut state_values = Vec::new();
+        for s in &block.states {
+            state_values.push(s.num_values as u32);
         }
+        block_mapping.insert(protocol::Block::from_id(block.id), state_values);
     }
 
-    BlockRegistry::build(block_states, blocks.len())
+    BlockRegistry::build(block_mapping)
 }
 
 #[allow(clippy::explicit_counter_loop)]
