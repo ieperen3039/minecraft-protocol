@@ -21,7 +21,7 @@ mod tests {
     fn test_get_block() {
         let registry = get_block_registry();
 
-        let states = registry.block_to_block_states(&Block::from(BlockId::OakSlab));
+        let states = registry.block_to_block_states(Block::from(BlockId::OakSlab));
 
         for state_id in states.clone() {
             let element = BlockWithStateId::from_id(state_id).expect("invalid state id");

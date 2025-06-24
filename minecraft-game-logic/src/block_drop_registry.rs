@@ -178,7 +178,7 @@ impl BlockDropRegistry {
             // else the block already drops itself, or never drops anything
         }
 
-        let block = block_registry.block_state_to_block(&block_state);
+        let block = block_registry.block_state_to_block(block_state);
 
         if let Some(tools) = self.block_tools.get(&block) {
             if tools.contains(&held_item) {

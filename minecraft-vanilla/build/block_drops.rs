@@ -32,7 +32,7 @@ pub fn get_block_drop_registry(
 
         registry.set_tools(Block::from_id(block.id), tools);
 
-        let state_ids = block_registry.block_to_block_states(&Block::from_id(block.id));
+        let state_ids = block_registry.block_to_block_states(Block::from_id(block.id));
         let first_state_id = *state_ids.start();
 
         for state_id in state_ids {
@@ -330,14 +330,15 @@ fn get_state_value(
     let mut state_remainder = relative_state_id;
 
     for block_state in block_states {
-        let field_value = state_remainder % (block_state.num_values as u32);
+        let num_values = block_state.num_values as u32;
+        let field_value = state_remainder % num_values;
 
         if block_state.name == target_state {
             return Some(field_value);
         }
 
         state_remainder -= field_value;
-        state_remainder /= 2;
+        state_remainder /= num_values;
     }
 
     // no such state exists
