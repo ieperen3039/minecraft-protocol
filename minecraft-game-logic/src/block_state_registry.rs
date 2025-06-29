@@ -117,13 +117,20 @@ impl BlockStateRegistry {
         // panics if the block_state is not valid
         self.block_state_id_to_block_id[block_state.id() as usize]
     }
+    
+    pub fn get_default_block_state(
+        &self,
+        block: Block
+    ) -> BlockWithState {
+        self.block_id_to_default_state_id[block.id() as usize]
+    }
 
     /// Returns the numerical value of the state represented by target_state.
     /// If target_state is not based off the given block_state, the result is undefined
     pub fn get_block_state_value(
         &self,
         block_state: BlockWithState,
-        target_state: BlockState,
+        target_state: &BlockState,
     ) -> u32 {
         let block = target_state.block;
         debug_assert_eq!(block, self.block_state_to_block(block_state));
@@ -139,7 +146,7 @@ impl BlockStateRegistry {
     pub fn set_block_state_value(
         &self,
         block_state: BlockWithState,
-        target_state: BlockState,
+        target_state: &BlockState,
         new_value: u32,
     ) -> BlockWithState {
         let block = target_state.block;
