@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
 use crate::*;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Entity(u32);
 
 impl Entity {

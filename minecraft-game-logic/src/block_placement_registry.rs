@@ -6,7 +6,6 @@ use minecraft_protocol::data::items::Item;
 
 /// Database for mapping a block placement action to the final BlockWithState to be placed
 pub struct BlockPlacementRegistry {
-    item_id_to_block_id: Vec<Block>,
     block_id_to_placement_logic: Vec<PlacementLogic>,
 }
 
@@ -15,7 +14,7 @@ impl BlockPlacementRegistry {
     /// which block will be placed.
     pub fn get_block(
         &self,
-        block_state_registry: BlockStateRegistry,
+        block_state_registry: &BlockStateRegistry,
         held_item: Item,
         face: BlockFace,
         cursor_position_x: f32,

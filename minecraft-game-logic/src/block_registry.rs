@@ -1,10 +1,13 @@
+use std::collections::HashMap;
 use crate::tool_type::ToolType;
-use std::iter::Map;
+use std::ops::Range;
+use minecraft_protocol::data::blocks::Block;
 
 pub struct BlockRegistry {
-    /// Per mod prefix a list of blocks.
+    /// Per mod prefix a list of indices in the `blocks` table.
     /// Vanilla blocks may be found under "minecraft"
-    blocks: Map<String, Vec<BlockDataEntry>>
+    prefixes: HashMap<String, Range<usize>>,
+    blocks: Vec<BlockDataEntry>,
 }
 
 pub struct BlockDataEntry {
@@ -55,7 +58,7 @@ pub struct BlockDataEntry {
 pub enum PistonBehaviour {
     Push,
     Break,
-    Block
+    Block,
 }
 
 pub enum BlockMaterial {
@@ -71,5 +74,19 @@ pub enum BlockMaterial {
     Wool = 9,
     Gourd = 10,
     VineOrGlowLichen = 11,
+}
 
+impl BlockRegistry {
+    pub fn get_block_data(&self, block: Block) -> &BlockDataEntry {
+        &self.blocks[block.id() as usize]
+    }
+    
+    pub fn get_block_data_by_name(&self, qualified_internal_name: &str) -> Option<&BlockDataEntry> {
+        let mut name_parts = qualified_internal_name.split(":");
+        let prefix = name_parts.next().expect("empty name");
+        let internal_name = name_parts.next().expect("name was unqualified");
+        
+        let block_range = self.prefixes[prefix].clone();
+        self.blocks[block_range].iter().find(|b| b.internal_name == internal_name)
+    }
 }
