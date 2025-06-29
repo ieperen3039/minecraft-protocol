@@ -1,6 +1,6 @@
-use minecraft_game_logic::block_state_registry::BlockRegistry;
+use minecraft_game_logic::block_state_registry::BlockStateRegistry;
 
-pub fn get_block_registry() -> BlockRegistry {
+pub fn get_block_registry() -> BlockStateRegistry {
     let (result, _) = bincode::serde::decode_from_slice(
         include_bytes!("../../data/blocks.bin"),
         bincode::config::standard(),

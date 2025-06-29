@@ -1,7 +1,7 @@
 use minecraft_external::json;
 use minecraft_external::json::BlockState;
 use minecraft_game_logic::block_drop_registry::*;
-use minecraft_game_logic::block_state_registry::BlockRegistry;
+use minecraft_game_logic::block_state_registry::BlockStateRegistry;
 use minecraft_protocol::data::block_states::BlockWithState;
 use minecraft_protocol::data::{blocks::Block, items::Item};
 // Currently impossible to encode:
@@ -10,7 +10,7 @@ use minecraft_protocol::data::{blocks::Block, items::Item};
 //  * beehive drop bee entities (if there are bees in the hive, which is not part of the state data)
 
 pub fn get_block_drop_registry(
-    block_registry: &BlockRegistry,
+    block_registry: &BlockStateRegistry,
     block_drops: &Vec<json::BlockDropMapping>,
     blocks: &Vec<json::Block>,
     items: &Vec<json::Item>,

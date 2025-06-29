@@ -1,11 +1,12 @@
 use convert_case::{Case, Casing};
 use minecraft_external::json::{Block, BlockState};
-use minecraft_game_logic::block_state_registry::BlockRegistry;
+use minecraft_game_logic::block_state_registry::BlockStateRegistry;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 
 use minecraft_protocol::data::blocks as protocol;
+use minecraft_protocol::data::block_states::BlockWithState;
 
 fn block_state_type_name(
     block_state: &BlockState,
@@ -109,18 +110,18 @@ pub enum {} {{{}
     )
 }
 
-pub fn get_block_registry(blocks: &Vec<Block>) -> BlockRegistry {
-    let mut block_mapping: HashMap<protocol::Block, Vec<u32>> = HashMap::new();
+pub fn get_block_registry(blocks: &Vec<Block>) -> BlockStateRegistry {
+    let mut registry = BlockStateRegistry::new();
 
     for block in blocks {
         let mut state_values = Vec::new();
         for s in &block.states {
             state_values.push(s.num_values as u32);
         }
-        block_mapping.insert(protocol::Block::from_id(block.id), state_values);
+        registry.add(protocol::Block::from_id(block.id), state_values, BlockWithState::from_id(block.default_state));
     }
-
-    BlockRegistry::build(block_mapping)
+    
+    registry
 }
 
 #[allow(clippy::explicit_counter_loop)]
